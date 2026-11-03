@@ -1,248 +1,1060 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="hi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#7b132b">
-<title>Studio Manorama | POS & Inventory</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<style>
-:root{--wine:#7b132b;--dark:#630c20;--gold:#e8b84b}
-body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:#f7f5f3;color:#241b1d}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border-radius:.7rem;padding:.65rem .9rem;font-weight:650;transition:.15s}
-.btn-primary{background:var(--wine);color:#fff}.btn-primary:hover{background:var(--dark)}
-.btn-light{background:#f5e9ec;color:var(--wine)}.btn-outline{border:1px solid #e7d9dc;background:white;color:#5b2734}
-.field{width:100%;border:1px solid #e5d9dc;border-radius:.65rem;padding:.68rem .78rem;background:#fff;outline:none}
-.field:focus{border-color:var(--wine);box-shadow:0 0 0 3px #7b132b18}
-.pill{border:1px solid #eadde0;border-radius:999px;padding:.45rem .8rem;background:white;color:#69414a;font-size:.84rem;font-weight:650;white-space:nowrap}
-.pill.active{background:var(--wine);color:white;border-color:var(--wine)}
-.card{background:white;border:1px solid #eee7e8;border-radius:1rem;box-shadow:0 3px 14px #32101a08}
-.muted{color:#887a7e}.gold{color:var(--gold)}
-.modal-backdrop{position:fixed;inset:0;background:#17070bcc;display:none;align-items:center;justify-content:center;padding:1rem;z-index:5000}
-.modal-backdrop.show{display:flex}.modal{background:#fff;border-radius:1rem;width:min(620px,100%);max-height:92vh;overflow:auto}
-#scannerOverlay{display:none;position:fixed;inset:0;background:#12070bfa;z-index:9999;color:white;align-items:center;justify-content:center;padding:1rem}
-#scannerOverlay.show{display:flex}
-#reader{width:min(520px,92vw);background:#fff;border-radius:1rem;overflow:hidden}
-#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:11000;background:#241116;color:white;padding:.8rem 1.1rem;border-radius:999px;display:none;box-shadow:0 5px 25px #0004}
-table{width:100%;border-collapse:collapse}th,td{padding:.75rem .7rem;text-align:left;border-bottom:1px solid #f0e9ea;font-size:.88rem}th{color:#806d72;font-size:.76rem;text-transform:uppercase;letter-spacing:.04em;background:#fcfafb}
-.product-card{border:1px solid #eee5e7;background:#fff;border-radius:.9rem;padding:.85rem;text-align:left;min-height:120px}
-.product-card:active{transform:scale(.985)}
-@media(min-width:1024px){.pos-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(350px,.85fr);gap:1rem}}
-@media print{
- @page{size:80mm auto;margin:3mm}
- body{background:#fff!important;margin:0!important;padding:0!important}
- body *{visibility:hidden!important}
- #printArea,#printArea *{visibility:visible!important}
- #printArea{display:block!important;position:absolute!important;left:0!important;top:0!important;width:74mm!important;margin:0!important;padding:0!important;color:#000!important;background:#fff!important;font:11px/1.35 Arial,sans-serif!important}
- #printArea .receipt-title{text-align:center;font-size:17px;font-weight:800}
- #printArea .center{text-align:center}
- #printArea table{width:100%;border-collapse:collapse}
- #printArea th,#printArea td{padding:3px 1px;border-bottom:1px dashed #888;font-size:10px;background:#fff!important;color:#000!important}
- #printArea .no-print{display:none!important}
-}
-#printArea{display:none}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Manorama - Smart POS & Barcode System</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- JsBarcode for Barcode Label Generation -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+  <!-- Official Google Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printable-a4-bill, #printable-a4-bill * {
+        visibility: visible !important;
+      }
+      #printable-barcode-sheet, #printable-barcode-sheet * {
+        visibility: visible !important;
+      }
+      .print-area-active {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 5mm !important;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 8mm;
+      }
+    }
+  </style>
 </head>
-<body>
-<header class="bg-white border-b border-rose-100 sticky top-0 z-40">
- <div class="max-w-[1600px] mx-auto px-4 py-3 flex items-center justify-between gap-3">
-  <div class="flex items-center gap-3 min-w-0">
-   <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white text-xl shadow" style="background:linear-gradient(145deg,#8d1b36,#53091d)"><i class="fa-solid fa-crown gold"></i></div>
-   <div class="min-w-0"><div class="font-extrabold tracking-tight text-lg sm:text-xl" style="color:var(--wine)">STUDIO MANORAMA</div><div class="text-xs muted truncate">Vidyapati Nagar, Samastipur · 7542074417</div></div>
+<body class="bg-slate-100 text-slate-800 font-sans pb-12 antialiased">
+
+  <!-- ================= TOP HEADER ================= -->
+  <header class="bg-[#7b132b] text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-amber-400 text-[#7b132b] rounded-full flex items-center justify-center font-black text-xl shadow">
+          SM
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold leading-none">Studio Manorama</h1>
+            <span class="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Smart POS</span>
+          </div>
+          <p class="text-[11px] text-pink-200 mt-0.5">Vidyapati Nagar, Samastipur | Mob: 7542074417 | UPI: 7903358228@ybl</p>
+        </div>
+      </div>
+
+      <!-- NAVIGATION TABS -->
+      <div class="flex items-center gap-2">
+        <button onclick="switchTab('billing')" id="tab-billing" class="bg-white text-[#7b132b] font-bold text-xs px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-cash-register"></i> Billing & Daybook
+        </button>
+        <button onclick="switchTab('stock')" id="tab-stock" class="bg-[#630c20] text-pink-100 hover:bg-[#500919] font-bold text-xs px-3.5 py-2 rounded-xl border border-pink-900/40 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-boxes-stacked"></i> Stock Master
+        </button>
+        <button onclick="switchTab('barcodes')" id="tab-barcodes" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-xs px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-barcode"></i> A4 Barcode Printer
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <main class="max-w-7xl mx-auto p-3 sm:p-5">
+
+    <!-- ================= VIEW 1: BILLING & DAYBOOK ================= -->
+    <section id="view-billing" class="space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- LEFT: CATALOG & MANUAL PRODUCT SELECTION -->
+        <div class="lg:col-span-7 xl:col-span-8 space-y-4">
+          <!-- SEARCH & QUICK BARCODE INPUT -->
+          <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-2">
+            <div class="relative flex-1">
+              <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+              <input id="billing-search" type="text" oninput="renderProductCards()" onkeydown="handleBarcodeEnter(event)" placeholder="Search by Product Name or Barcode..." class="w-full pl-10 pr-3 py-2 border rounded-xl text-xs sm:text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#7b132b] outline-none">
+            </div>
+            <button onclick="handleQuickBarcodeAdd()" class="bg-[#7b132b] hover:bg-[#630c20] text-white px-4 py-2 rounded-xl text-xs font-bold shadow flex items-center gap-1.5">
+              <i class="fa-solid fa-plus"></i> Add to Bill
+            </button>
+          </div>
+
+          <!-- CATEGORY PILLS (Including Bangles & Jewelry) -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold scrollbar-none">
+            <button onclick="filterCategory('All')" id="cat-All" class="px-3.5 py-1.5 rounded-full bg-[#7b132b] text-white shadow whitespace-nowrap">All Items</button>
+            <button onclick="filterCategory('Bangles')" id="cat-Bangles" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">Bangles (लाहठी/चूड़ी)</button>
+            <button onclick="filterCategory('Jewelry')" id="cat-Jewelry" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">Jewelry (गहने)</button>
+            <button onclick="filterCategory('Cosmetics')" id="cat-Cosmetics" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">Cosmetics</button>
+            <button onclick="filterCategory('Perfumes')" id="cat-Perfumes" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">Perfumes</button>
+            <button onclick="filterCategory('Parlour Services')" id="cat-Parlour Services" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">Parlour Services</button>
+            <button onclick="filterCategory('Gifts & Photo')" id="cat-Gifts & Photo" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">Gifts & Photo</button>
+          </div>
+
+          <!-- PRODUCT TILES -->
+          <div id="billing-product-grid" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[560px] overflow-y-auto pr-1">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- RIGHT: INVOICE CART & TOTALS -->
+        <div class="lg:col-span-5 xl:col-span-4 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b pb-2 mb-3">
+              <div>
+                <h2 class="text-sm font-bold text-slate-800">Current Invoice (A4 Bill)</h2>
+                <span id="cart-item-count" class="text-[11px] text-slate-400">0 items selected</span>
+              </div>
+              <button onclick="clearCart()" class="text-xs font-bold text-red-500 hover:text-red-700">Clear All</button>
+            </div>
+
+            <!-- CUSTOMER DETAILS -->
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <input id="bill-cust-name" type="text" placeholder="Customer Name" class="border rounded-xl px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white focus:ring-1 focus:ring-[#7b132b] outline-none">
+              <input id="bill-cust-phone" type="tel" maxlength="10" placeholder="Mobile / WhatsApp" class="border rounded-xl px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white focus:ring-1 focus:ring-[#7b132b] outline-none">
+            </div>
+
+            <!-- CART ITEMS LIST -->
+            <div id="cart-items-box" class="min-h-[160px] max-h-[240px] overflow-y-auto border border-slate-100 rounded-xl p-2 mb-3 bg-slate-50/50 space-y-1.5">
+              <!-- Rendered items -->
+            </div>
+
+            <!-- TOTALS -->
+            <div class="space-y-1.5 text-xs border-t pt-3">
+              <div class="flex justify-between text-slate-600">
+                <span>Subtotal</span>
+                <span id="lbl-subtotal" class="font-bold">₹0.00</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Discount (₹)</span>
+                <input id="bill-discount" type="number" min="0" value="0" oninput="calculateTotals()" class="w-20 border rounded-lg px-2 py-0.5 text-right font-bold text-xs bg-slate-50">
+              </div>
+              <div class="flex justify-between items-center text-base sm:text-lg font-bold border-t pt-2 text-slate-800">
+                <span>Net Total Payable</span>
+                <span id="lbl-net-total" class="text-[#7b132b] font-black text-xl">₹0.00</span>
+              </div>
+            </div>
+
+            <!-- PAYMENT MODE -->
+            <div class="grid grid-cols-2 gap-2 mt-3 pt-2 border-t">
+              <button onclick="setPaymentMode('Cash')" id="pm-Cash" class="py-2 rounded-xl border-2 border-[#7b132b] bg-pink-50 text-[#7b132b] font-bold text-xs flex items-center justify-center gap-1 shadow-xs">
+                💵 Cash
+              </button>
+              <button onclick="setPaymentMode('UPI')" id="pm-UPI" class="py-2 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs flex items-center justify-center gap-1 hover:bg-slate-50">
+                📱 UPI (QR Payment)
+              </button>
+            </div>
+          </div>
+
+          <!-- PRINT BILL BUTTON -->
+          <div class="mt-4 pt-3 border-t">
+            <button onclick="generateAndPrintA4Bill()" class="w-full bg-[#7b132b] hover:bg-[#630c20] text-white font-bold py-3 rounded-xl text-sm shadow flex items-center justify-center gap-2 transition">
+              <i class="fa-solid fa-print text-base"></i>
+              <span>Save & Print A4 Invoice Bill</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TODAY'S DAYBOOK -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+        <h3 class="text-sm sm:text-base font-bold text-slate-800 mb-3">Today's Daybook (Sales History)</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase border-b text-[10px]">
+              <tr>
+                <th class="py-2 px-3">INVOICE NO.</th>
+                <th class="py-2 px-3">TIME</th>
+                <th class="py-2 px-3">CUSTOMER</th>
+                <th class="py-2 px-3">ITEMS</th>
+                <th class="py-2 px-3">PAY MODE</th>
+                <th class="py-2 px-3 text-right">TOTAL</th>
+                <th class="py-2 px-3 text-center">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="daybook-rows" class="divide-y divide-slate-100 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 2: STOCK MASTER (MANUAL & SMART BARCODE GENERATOR) ================= -->
+    <section id="view-stock" class="hidden space-y-5">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-800">Stock & Barcode Master</h2>
+            <p class="text-xs text-slate-500">Add products with custom smart barcodes embedding Category, Purchase Price & MRP.</p>
+          </div>
+          <button onclick="toggleStockForm(true)" class="bg-[#7b132b] hover:bg-[#630c20] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow">
+            <i class="fa-solid fa-plus"></i> Add New Product
+          </button>
+        </div>
+
+        <!-- INLINE ADD / EDIT FORM WITH EMBEDDED BARCODE BUILDER -->
+        <div id="stock-form-panel" class="hidden mb-6 p-4 border border-pink-200 rounded-2xl bg-pink-50/40">
+          <h3 id="form-header-title" class="text-xs font-bold text-[#7b132b] uppercase tracking-wider mb-3">New Product Entry</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Category (श्रेणी)</label>
+              <select id="inp-category" onchange="autoGenerateSmartBarcode()" class="w-full border rounded-xl p-2 bg-white font-semibold">
+                <option value="BNG">Bangles (लाहठी / चूड़ी)</option>
+                <option value="JWL">Jewelry (गहने / आभूषण)</option>
+                <option value="CSM">Cosmetics (सौंदर्य प्रसाधन)</option>
+                <option value="PRF">Perfumes (इत्र / बॉडी स्प्रे)</option>
+                <option value="PLR">Parlour Services (पार्लर)</option>
+                <option value="GFT">Gifts & Photo (उपहार / फोटो)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Product Name (सामान का नाम)</label>
+              <input id="inp-name" type="text" placeholder="e.g. Lahthi Multi Set 4pc" class="w-full border rounded-xl p-2 bg-white font-bold">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Purchase Price (खरीद मूल्य ₹)</label>
+              <input id="inp-cost" type="number" value="100" oninput="autoGenerateSmartBarcode()" class="w-full border rounded-xl p-2 bg-white font-bold text-slate-800">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">MRP / Selling Price (बिक्री मूल्य ₹)</label>
+              <input id="inp-price" type="number" value="180" oninput="autoGenerateSmartBarcode()" class="w-full border rounded-xl p-2 bg-white font-bold text-[#7b132b]">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Current Stock Qty (मात्रा)</label>
+              <input id="inp-stock" type="number" value="10" class="w-full border rounded-xl p-2 bg-white font-bold text-emerald-700">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block font-bold text-slate-700 mb-1">
+                Generated Smart Barcode (खरीद मूल्य और MRP युक्त बारकोड)
+              </label>
+              <div class="flex gap-2">
+                <input id="inp-barcode" type="text" placeholder="e.g. BNG-100-180-845" class="w-full border rounded-xl p-2 bg-amber-50 font-mono font-bold text-slate-900">
+                <button type="button" onclick="autoGenerateSmartBarcode()" class="bg-amber-400 hover:bg-amber-500 text-slate-900 px-3 rounded-xl font-bold text-xs whitespace-nowrap shadow-xs">
+                  Re-Generate
+                </button>
+              </div>
+              <p class="text-[10px] text-slate-500 mt-1">Structure: <span class="font-mono font-bold text-[#7b132b]">[CATEGORY]-[PURCHASE PRICE]-[MRP]-[CODE]</span></p>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-4 pt-3 border-t border-pink-200">
+            <button onclick="toggleStockForm(false)" class="px-4 py-2 border rounded-xl text-xs font-bold bg-white text-slate-600">Cancel</button>
+            <button onclick="saveStockItem()" class="px-5 py-2 bg-[#7b132b] hover:bg-[#630c20] text-white rounded-xl text-xs font-bold shadow">Save Product</button>
+          </div>
+        </div>
+
+        <!-- STOCK TABLE -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b text-[10px]">
+              <tr>
+                <th class="py-2.5 px-3">SMART BARCODE</th>
+                <th class="py-2.5 px-3">PRODUCT NAME</th>
+                <th class="py-2.5 px-3">CATEGORY</th>
+                <th class="py-2.5 px-3 text-right">PURCHASE (₹)</th>
+                <th class="py-2.5 px-3 text-right">MRP (₹)</th>
+                <th class="py-2.5 px-3 text-center">STOCK</th>
+                <th class="py-2.5 px-3 text-center">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="stock-table-rows" class="divide-y divide-slate-100 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 3: A4 BARCODE STICKER SHEET PRINTER ================= -->
+    <section id="view-barcodes" class="hidden space-y-5">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-800">A4 Barcode Label Sheet Generator</h2>
+            <p class="text-xs text-slate-500">A4 शीट पर क्वांटिटी के अनुसार बारकोड स्टीकर व्यवस्थित करके प्रिंट करें।</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="selectAllStockForBarcodePrint()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-3 py-2 rounded-xl border">
+              Select All Stock
+            </button>
+            <button onclick="printA4BarcodeSheet()" class="bg-[#7b132b] hover:bg-[#630c20] text-white text-xs font-bold px-4 py-2 rounded-xl shadow flex items-center gap-1.5">
+              <i class="fa-solid fa-print"></i> Print A4 Barcode Sheet
+            </button>
+          </div>
+        </div>
+
+        <p class="text-xs font-bold text-slate-600 mb-2">Select Items & Label Quantities to Print on A4 Paper:</p>
+
+        <!-- BARCODE SELECTION TABLE -->
+        <div class="overflow-x-auto border rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b text-[10px]">
+              <tr>
+                <th class="py-2 px-3 text-center">PRINT?</th>
+                <th class="py-2 px-3">BARCODE</th>
+                <th class="py-2 px-3">PRODUCT NAME</th>
+                <th class="py-2 px-3">CATEGORY</th>
+                <th class="py-2 px-3 text-right">MRP (₹)</th>
+                <th class="py-2 px-3 text-center w-36">STICKER QTY</th>
+              </tr>
+            </thead>
+            <tbody id="barcode-selection-rows" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= PRINTABLE 1: A4 INVOICE BILL ================= -->
+  <div id="printable-a4-bill" class="hidden print-area-active font-sans text-black bg-white p-6 max-w-[210mm] mx-auto border">
+    <!-- STORE HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px;">
+      <div>
+        <h1 style="font-size: 24px; font-weight: 900; margin: 0; color: #7b132b; text-transform: uppercase; letter-spacing: 0.5px;">STUDIO MANORAMA</h1>
+        <p style="font-size: 13px; font-weight: bold; margin: 2px 0;">Vidyapati Nagar, Samastipur (Bihar - 848503)</p>
+        <p style="font-size: 12px; margin: 2px 0;">Deals in: Cosmetics, Bangles (लाहठी), Jewelry, Perfumes & Studio Gifts</p>
+        <p style="font-size: 12px; font-weight: bold; margin: 2px 0;">Mobile: +91 7542074417 | UPI ID: 7903358228@ybl</p>
+      </div>
+      <div style="text-align: right;">
+        <span style="display: inline-block; background: #000; color: #fff; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 4px; margin-bottom: 4px;">TAX INVOICE</span>
+        <p style="font-size: 13px; font-weight: bold; margin: 2px 0;" id="a4-inv-no">Inv: SM-1001</p>
+        <p style="font-size: 12px; margin: 2px 0;" id="a4-inv-date">Date: 03/11/2026</p>
+      </div>
+    </div>
+
+    <!-- CUSTOMER DETAILS -->
+    <div style="display: flex; justify-content: space-between; border: 1px solid #ccc; padding: 6px 10px; margin-bottom: 12px; font-size: 12px; background: #fafafa;">
+      <div>
+        <strong>Customer Name:</strong> <span id="a4-cust-name">Walk-in</span>
+      </div>
+      <div>
+        <strong>Contact No:</strong> <span id="a4-cust-phone">N/A</span>
+      </div>
+      <div>
+        <strong>Payment Mode:</strong> <span id="a4-cust-paymode" style="font-weight: bold; text-transform: uppercase;">CASH</span>
+      </div>
+    </div>
+
+    <!-- ITEMS TABLE -->
+    <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px;">
+      <thead>
+        <tr style="background: #f1f1f1; border-top: 1px solid #000; border-bottom: 1px solid #000;">
+          <th style="padding: 6px; text-align: center; width: 40px;">S.N.</th>
+          <th style="padding: 6px; text-align: left;">Item Description</th>
+          <th style="padding: 6px; text-align: center; width: 130px;">Barcode / Code</th>
+          <th style="padding: 6px; text-align: center; width: 60px;">Qty</th>
+          <th style="padding: 6px; text-align: right; width: 80px;">Rate (₹)</th>
+          <th style="padding: 6px; text-align: right; width: 90px;">Total (₹)</th>
+        </tr>
+      </thead>
+      <tbody id="a4-bill-items-rows"></tbody>
+    </table>
+
+    <!-- TOTALS & PAYMENT QR SECTION -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #000; padding-top: 8px; margin-bottom: 16px;">
+      <!-- PAYMENT QR CODE -->
+      <div style="display: flex; align-items: center; gap: 12px; border: 1px dashed #7b132b; padding: 8px; border-radius: 6px;">
+        <div id="a4-bill-qrcode-box" style="width: 80px; height: 80px;"></div>
+        <div>
+          <p style="font-size: 11px; font-weight: bold; color: #7b132b; margin: 0 0 2px 0;">Scan to Pay via UPI</p>
+          <p style="font-size: 10px; margin: 0;">GPay, PhonePe, Paytm</p>
+          <p style="font-size: 10px; font-weight: bold; margin: 2px 0 0 0;">7903358228@ybl</p>
+        </div>
+      </div>
+
+      <!-- AMOUNT CALCULATION -->
+      <div style="width: 250px; font-size: 12px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span>Subtotal:</span>
+          <span id="a4-subtotal" style="font-weight: bold;">₹0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span>Discount:</span>
+          <span id="a4-discount">- ₹0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px 0; color: #7b132b;">
+          <span>NET PAYABLE:</span>
+          <span id="a4-net-total">₹0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TERMS & CONDITIONS (HINDI TRANSLATED) & BOLD FOOTER -->
+    <div style="border-top: 1px solid #ccc; padding-top: 10px; margin-top: 10px;">
+      <div style="font-size: 11px; line-height: 1.6; color: #222; background: #fff8f8; border: 1px solid #ffd6d6; padding: 8px 12px; border-radius: 6px;">
+        <div style="font-weight: bold; text-decoration: underline; margin-bottom: 2px; color: #7b132b;">दुकान के नियम एवं शर्तें (Terms & Conditions):</div>
+        <div>• <strong>बिका हुआ माल वापस नहीं होगा। (No Return)</strong></div>
+        <div>• <strong>स्टॉक उपलब्ध होने पर ही केवल एक्सचेंज संभव है। (Exchange only possible on availability)</strong></div>
+        <div>• <strong>काउंटर छोड़ने से पहले कृपया अपने सामान की जांच अवश्य कर लें। (Before leaving counter please check your items)</strong></div>
+      </div>
+
+      <!-- BOLD FOOTER -->
+      <div style="text-align: center; margin-top: 16px;">
+        <h2 style="font-size: 18px; font-weight: 900; margin: 0; color: #000; text-transform: uppercase; letter-spacing: 1px;">
+          THANK YOU! VISIT AGAIN!
+        </h2>
+        <p style="font-size: 10px; color: #555; margin-top: 2px;">Studio Manorama | धन्यवाद! फिर पधारें!</p>
+      </div>
+    </div>
   </div>
-  <div class="flex items-center gap-2"><span id="syncStatus" class="text-xs rounded-full px-3 py-2 bg-amber-50 text-amber-800"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Connecting</span><button class="btn btn-light text-sm" onclick="exportBackup()"><i class="fa-solid fa-download"></i><span class="hidden sm:inline">Backup</span></button></div>
- </div>
- <nav class="max-w-[1600px] mx-auto px-4 pb-3 flex gap-2">
-  <button id="tabBilling" class="btn btn-primary" onclick="showTab('billing')"><i class="fa-solid fa-cash-register"></i> Billing & Daybook</button>
-  <button id="tabStock" class="btn btn-light" onclick="showTab('stock')"><i class="fa-solid fa-boxes-stacked"></i> Stock Master</button>
- </nav>
-</header>
 
-<main class="max-w-[1600px] mx-auto p-3 sm:p-5">
-<section id="billingView">
- <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-  <div><h1 class="text-xl font-bold">Point of Sale</h1><p class="text-sm muted">Search products, build cart and generate receipt.</p></div>
-  <div class="text-sm text-right"><div class="muted">Today's date</div><div id="todayLabel" class="font-bold"></div></div>
- </div>
- <div class="pos-layout">
-  <div class="min-w-0">
-   <div class="card p-3 sm:p-4 mb-3">
-    <div class="flex gap-2">
-     <div class="relative flex-1"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 muted"></i><input id="productSearch" class="field pl-10" placeholder="Search product name or scan barcode…" autocomplete="off" oninput="renderProducts()" onkeydown="searchEnter(event)"></div>
-     <button class="btn btn-primary" onclick="openScanner('billing')" title="Scan barcode"><i class="fa-solid fa-camera"></i><span class="hidden sm:inline">Scan</span></button>
+  <!-- ================= PRINTABLE 2: A4 BARCODE STICKER SHEET ================= -->
+  <div id="printable-barcode-sheet" class="hidden print-area-active bg-white p-4 max-w-[210mm] mx-auto">
+    <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 4px; margin-bottom: 12px;">
+      <h2 style="font-size: 16px; font-weight: bold; margin: 0; text-transform: uppercase;">STUDIO MANORAMA - BARCODE LABELS SHEET</h2>
+      <p style="font-size: 10px; margin: 0;">A4 Printable Sticker Sheet | Mob: 7542074417</p>
     </div>
-    <div id="categoryPills" class="flex gap-2 overflow-x-auto py-3">
-     <button class="pill active" data-cat="All Items" onclick="setCategory('All Items')">All Items</button>
-     <button class="pill" data-cat="Cosmetics" onclick="setCategory('Cosmetics')">Cosmetics</button>
-     <button class="pill" data-cat="Perfumes" onclick="setCategory('Perfumes')">Perfumes</button>
-     <button class="pill" data-cat="Parlour Services" onclick="setCategory('Parlour Services')">Parlour Services</button>
-     <button class="pill" data-cat="Gifts & Photo" onclick="setCategory('Gifts & Photo')">Gifts & Photo</button>
+    <!-- 4 COLUMNS A4 GRID FOR LABELS -->
+    <div id="a4-barcode-grid-container" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6mm; align-items: start;">
+      <!-- Dynamic Barcode stickers -->
     </div>
-   </div>
-   <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3"></div>
-   <div class="card p-4 mt-4">
-    <div class="flex items-center justify-between mb-3"><h2 class="font-bold">Today's Daybook</h2><span id="daybookCount" class="text-xs muted">0 bills</span></div>
-    <div class="overflow-x-auto"><table><thead><tr><th>Invoice</th><th>Customer</th><th>Mode</th><th>Total</th><th></th></tr></thead><tbody id="daybookRows"></tbody></table></div>
-   </div>
   </div>
-  <aside class="card p-4 mt-3 lg:mt-0 h-fit lg:sticky lg:top-36">
-   <div class="flex items-center justify-between mb-3"><h2 class="font-bold text-lg"><i class="fa-solid fa-basket-shopping mr-2" style="color:var(--wine)"></i>Current Cart</h2><button class="text-xs text-rose-700 font-semibold" onclick="clearCart()">Clear all</button></div>
-   <div class="grid grid-cols-2 gap-2 mb-3">
-    <input id="customerName" class="field text-sm" placeholder="Customer name">
-    <input id="customerPhone" class="field text-sm" placeholder="Phone (optional)" inputmode="tel">
-   </div>
-   <div id="cartItems" class="space-y-2 max-h-[36vh] overflow-y-auto min-h-20"></div>
-   <div class="border-t border-dashed border-rose-200 mt-4 pt-3 space-y-2 text-sm">
-    <div class="flex justify-between"><span class="muted">Subtotal</span><strong id="subtotal">₹0.00</strong></div>
-    <div class="flex items-center justify-between gap-3"><label for="discount" class="muted">Discount (₹)</label><input id="discount" type="number" min="0" step=".01" value="0" class="field max-w-32 text-right" oninput="renderCart()"></div>
-    <label class="flex items-center gap-2"><input id="gstToggle" type="checkbox" class="accent-rose-800" onchange="renderCart()"> Add 18% GST</label>
-    <div class="flex justify-between text-base border-t pt-2"><span class="font-bold">Net Payable</span><strong id="netTotal" class="text-xl" style="color:var(--wine)">₹0.00</strong></div>
-   </div>
-   <div class="mt-3">
-    <label class="text-xs font-semibold muted">PAYMENT MODE</label>
-    <div class="grid grid-cols-3 gap-2 mt-1">
-     <button class="pill active" data-mode="Cash" onclick="setPayment('Cash')"><i class="fa-solid fa-money-bill mr-1"></i>Cash</button>
-     <button class="pill" data-mode="UPI" onclick="setPayment('UPI')"><i class="fa-solid fa-qrcode mr-1"></i>UPI</button>
-     <button class="pill" data-mode="Split/Udhar" onclick="setPayment('Split/Udhar')"><i class="fa-solid fa-wallet mr-1"></i>Split/Udhar</button>
-    </div>
-   </div>
-   <div id="upiPanel" class="hidden mt-3 p-3 rounded-xl bg-rose-50 text-center"><div class="text-xs font-semibold mb-2">Scan to pay · 7903358228@ybl</div><div id="upiQr" class="inline-block bg-white p-2 rounded-lg"></div><div id="upiAmount" class="font-bold mt-2"></div></div>
-   <div id="splitPanel" class="hidden mt-3 grid grid-cols-2 gap-2"><input id="cashPart" class="field" type="number" min="0" placeholder="Cash ₹"><input id="upiPart" class="field" type="number" min="0" placeholder="UPI ₹"><input id="udharPart" class="field col-span-2" type="number" min="0" placeholder="Udhar ₹"></div>
-   <button class="btn btn-primary w-full mt-4 py-3" onclick="checkout()"><i class="fa-solid fa-receipt"></i> Complete Sale & Print</button>
-   <button class="btn btn-outline w-full mt-2" onclick="shareWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Share Bill on WhatsApp</button>
-  </aside>
- </div>
-</section>
 
-<section id="stockView" class="hidden">
- <div class="flex flex-wrap justify-between items-center gap-3 mb-4"><div><h1 class="text-xl font-bold">Stock Master</h1><p class="text-sm muted">Manage products, prices and stock movement.</p></div><button class="btn btn-primary" onclick="openProductModal()"><i class="fa-solid fa-plus"></i> Add New Item</button></div>
- <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-  <div class="card p-4"><div class="text-xs muted">Total Products</div><div id="statProducts" class="text-2xl font-extrabold mt-1">0</div></div>
-  <div class="card p-4"><div class="text-xs muted">Units in Stock</div><div id="statUnits" class="text-2xl font-extrabold mt-1">0</div></div>
-  <div class="card p-4"><div class="text-xs muted">Low Stock (≤ 5)</div><div id="statLow" class="text-2xl font-extrabold mt-1 text-amber-700">0</div></div>
-  <div class="card p-4"><div class="text-xs muted">Stock Value (Cost)</div><div id="statValue" class="text-2xl font-extrabold mt-1">₹0</div></div>
- </div>
- <div class="card p-3 mb-3 flex flex-col sm:flex-row gap-2"><input id="stockSearch" class="field" placeholder="Search name / barcode…" oninput="renderStock()"><button class="btn btn-outline" onclick="openScanner('stock')"><i class="fa-solid fa-camera"></i> Scan Barcode</button><button class="btn btn-light" onclick="openStockMove()"><i class="fa-solid fa-arrow-right-arrow-left"></i> Stock In / Out</button></div>
- <div class="card overflow-hidden"><div class="overflow-x-auto"><table><thead><tr><th>Barcode</th><th>Product</th><th>Category</th><th>Cost</th><th>Sale</th><th>Qty</th><th>Actions</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
-</section>
-</main>
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // ================= 1. STORE & FIREBASE CONFIG =================
+    const STORE_NAME = "Studio Manorama";
+    const STORE_UPI = "7903358228@ybl";
 
-<div id="productModal" class="modal-backdrop" onclick="backdropClose(event,'productModal')"><div class="modal p-5" role="dialog" aria-modal="true">
- <div class="flex justify-between items-center mb-4"><h2 id="productModalTitle" class="font-bold text-lg">Add New Item</h2><button onclick="closeModal('productModal')" class="text-xl muted"><i class="fa-solid fa-xmark"></i></button></div>
- <input id="editId" type="hidden">
- <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-  <label class="text-sm font-semibold">Barcode<div class="flex gap-2 mt-1"><input id="pBarcode" class="field" placeholder="Scan or enter barcode" oninput="barcodeAutofill()"><button class="btn btn-light" onclick="openScanner('stock')"><i class="fa-solid fa-camera"></i></button></div></label>
-  <label class="text-sm font-semibold">Product Name<input id="pName" class="field mt-1" placeholder="Product name"></label>
-  <label class="text-sm font-semibold">Category<select id="pCategory" class="field mt-1"><option>Cosmetics</option><option>Perfumes</option><option>Parlour Services</option><option>Gifts & Photo</option></select></label>
-  <label class="text-sm font-semibold">Cost Price (₹)<input id="pCost" type="number" min="0" step=".01" class="field mt-1"></label>
-  <label class="text-sm font-semibold">Selling Price (₹)<input id="pPrice" type="number" min="0" step=".01" class="field mt-1"></label>
-  <label class="text-sm font-semibold">Opening Stock<input id="pQty" type="number" min="0" step="1" class="field mt-1" value="0"></label>
- </div>
- <div class="flex justify-end gap-2 mt-5"><button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button><button class="btn btn-primary" onclick="saveProduct()"><i class="fa-solid fa-floppy-disk"></i> Save Item</button></div>
- <p class="text-xs muted mt-3">Barcode lookup includes a small editable starter catalogue; unknown barcodes can still be saved manually.</p>
-</div></div>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBw0xv804OEVoobm2gf46aoMRb6koT9aec",
+      authDomain: "studio-manorama.firebaseapp.com",
+      databaseURL: "https://studio-manorama-default-rtdb.firebaseio.com",
+      projectId: "studio-manorama",
+      storageBucket: "studio-manorama.firebasestorage.app",
+      messagingSenderId: "783861660398",
+      appId: "1:783861660398:web:901ffa3ee28fa4101951ff"
+    };
 
-<div id="moveModal" class="modal-backdrop" onclick="backdropClose(event,'moveModal')"><div class="modal p-5 max-w-md">
- <div class="flex justify-between mb-4"><h2 class="font-bold text-lg">Stock In / Out</h2><button onclick="closeModal('moveModal')"><i class="fa-solid fa-xmark"></i></button></div>
- <label class="text-sm font-semibold">Product<select id="moveProduct" class="field mt-1"></select></label>
- <div class="grid grid-cols-2 gap-3 mt-3"><label class="text-sm font-semibold">Movement<select id="moveType" class="field mt-1"><option value="in">Stock In (+)</option><option value="out">Stock Out (−)</option></select></label><label class="text-sm font-semibold">Quantity<input id="moveQty" class="field mt-1" type="number" min="1" value="1"></label></div>
- <label class="text-sm font-semibold block mt-3">Note (optional)<input id="moveNote" class="field mt-1" placeholder="Purchase / damage / adjustment"></label>
- <button class="btn btn-primary w-full mt-4" onclick="applyStockMove()">Update Stock</button>
-</div></div>
+    let db = null;
+    let stockRef = null;
+    let billsRef = null;
 
-<div id="scannerOverlay"><div class="w-full max-w-xl text-center"><div class="flex justify-between items-center mb-4"><div class="font-bold text-lg">Barcode Scanner</div><button class="btn bg-white/10 text-white" onclick="closeScanner()"><i class="fa-solid fa-xmark"></i> Close</button></div><div id="reader" class="mx-auto"></div><p class="text-sm text-white/70 mt-4">Allow camera permission. Use the rear camera where available.</p><div id="scanError" class="text-sm text-rose-200 mt-2"></div></div></div>
-<div id="toast"></div>
-<div id="printArea"></div>
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      stockRef = db.ref("inventory");
+      billsRef = db.ref("bills");
+    } catch(e) {
+      console.warn("Firebase Init:", e);
+    }
 
-<script>
-'use strict';
-const firebaseConfig = {
- apiKey:"AIzaSyBw0xv804OEVoobm2gf46aoMRb6koT9aec",
- authDomain:"studio-manorama.firebaseapp.com",
- databaseURL:"https://studio-manorama-default-rtdb.firebaseio.com",
- projectId:"studio-manorama",
- storageBucket:"studio-manorama.firebasestorage.app",
- messagingSenderId:"783861660398",
- appId:"1:783861660398:web:901ffa3ee28fa4101951ff"
-};
-const KEYS={inventory:'studioManorama_inventory_v1',bills:'studioManorama_bills_v1',moves:'studioManorama_moves_v1'};
-let inventory=[],bills=[],moves=[],cart=[],category='All Items',paymentMode='Cash',db=null,scanner=null,scanTarget='billing',lastBill=null;
-const money=n=>'₹'+(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-const today=()=>new Date().toLocaleDateString('en-CA');
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2600)}
-function readLocal(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(e){return []}}
-function saveLocal(){try{localStorage.setItem(KEYS.inventory,JSON.stringify(inventory));localStorage.setItem(KEYS.bills,JSON.stringify(bills));localStorage.setItem(KEYS.moves,JSON.stringify(moves))}catch(e){toast('Local storage full or unavailable')}} 
-function asArray(data){if(!data)return [];if(Array.isArray(data))return data; if(typeof data==='object')return Object.values(data);return []}
-function setSync(text,status){const el=document.getElementById('syncStatus');el.innerHTML='<i class="fa-solid '+(status==='online'?'fa-cloud':'fa-cloud-arrow-up')+' mr-1"></i>'+esc(text);el.className='text-xs rounded-full px-3 py-2 '+(status==='online'?'bg-emerald-50 text-emerald-800':'bg-amber-50 text-amber-800')}
-function persist(path,data){saveLocal();if(db){db.ref(path).set(data).then(()=>setSync('Synced','online')).catch(()=>setSync('Offline · Local saved','offline'))}}
-function initFirebase(){
- try{if(!window.firebase){setSync('Offline · Local saved','offline');return}if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);db=firebase.database();
-  ['inventory','bills'].forEach(path=>db.ref(path).on('value',snap=>{const local=readLocal(KEYS[path]);if(!snap.exists()&&local.length){db.ref(path).set(local).then(()=>setSync('Local data uploaded','online')).catch(()=>setSync('Offline · Local saved','offline'));return;}const remote=asArray(snap.val());if(path==='inventory'){inventory=remote;localStorage.setItem(KEYS.inventory,JSON.stringify(inventory));renderProducts();renderStock();}else{bills=remote;localStorage.setItem(KEYS.bills,JSON.stringify(bills));renderDaybook();}setSync('Live sync','online')},()=>setSync('Offline · Local saved','offline')));
- }catch(e){db=null;setSync('Offline · Local saved','offline')}
-}
-function showTab(tab){document.getElementById('billingView').classList.toggle('hidden',tab!=='billing');document.getElementById('stockView').classList.toggle('hidden',tab!=='stock');document.getElementById('tabBilling').className='btn '+(tab==='billing'?'btn-primary':'btn-light');document.getElementById('tabStock').className='btn '+(tab==='stock'?'btn-primary':'btn-light');if(tab==='stock')renderStock()}
-function seedIfEmpty(){if(inventory.length)return;inventory=[
-{id:uid(),barcode:'',name:'Lakme Kajal',category:'Cosmetics',cost:95,price:140,qty:8},
-{id:uid(),barcode:'',name:'Nivea Soft Cream',category:'Cosmetics',cost:105,price:145,qty:10},
-{id:uid(),barcode:'',name:'Fogg Body Spray',category:'Perfumes',cost:175,price:230,qty:6},
-{id:uid(),barcode:'',name:'Passport Photo (Set)',category:'Gifts & Photo',cost:10,price:50,qty:100},
-{id:uid(),barcode:'',name:'Basic Facial',category:'Parlour Services',cost:150,price:350,qty:999}
-];saveLocal()}
-function setCategory(c){category=c;document.querySelectorAll('[data-cat]').forEach(b=>b.classList.toggle('active',b.dataset.cat===c));renderProducts()}
-function renderProducts(){const q=(document.getElementById('productSearch')?.value||'').trim().toLowerCase();const list=inventory.filter(p=>(category==='All Items'||p.category===category)&&(!q||p.name.toLowerCase().includes(q)||String(p.barcode||'').toLowerCase().includes(q)));document.getElementById('productGrid').innerHTML=list.length?list.map(p=>`<button class="product-card hover:border-rose-300 hover:shadow-sm" onclick="addToCart('${esc(p.id)}')"><div class="flex justify-between gap-2"><span class="text-[10px] uppercase tracking-wide font-bold text-rose-800">${esc(p.category)}</span><span class="text-[10px] muted">${p.category==='Parlour Services'?'Service':`Stock ${Number(p.qty)||0}`}</span></div><div class="font-semibold mt-3 leading-snug">${esc(p.name)}</div><div class="flex justify-between items-end mt-3"><strong style="color:var(--wine)">${money(p.price)}</strong><span class="w-7 h-7 rounded-full bg-rose-50 text-rose-800 flex items-center justify-center"><i class="fa-solid fa-plus text-xs"></i></span></div></button>`).join(''):'<div class="col-span-full text-center py-12 muted">No products found. Add items in Stock Master.</div>'}
-function searchEnter(e){if(e.key!=='Enter')return;e.preventDefault();const q=e.target.value.trim().toLowerCase();if(!q)return;const exact=inventory.find(p=>String(p.barcode||'').toLowerCase()===q)||inventory.find(p=>p.name.toLowerCase()===q);if(exact){addToCart(exact.id);e.target.value='';renderProducts()}else{const matches=inventory.filter(p=>p.name.toLowerCase().includes(q));if(matches.length===1){addToCart(matches[0].id);e.target.value='';renderProducts()}else toast('No exact barcode or unique product match')}}
-function addToCart(id){const p=inventory.find(x=>x.id===id);if(!p)return;const item=cart.find(x=>x.id===id);if(item)item.qty++;else cart.push({id:p.id,name:p.name,price:Number(p.price)||0,qty:1});renderCart()}
-function changeQty(id,delta){const c=cart.find(x=>x.id===id);if(!c)return;c.qty+=delta;if(c.qty<=0)cart=cart.filter(x=>x.id!==id);renderCart()}
-function removeCart(id){cart=cart.filter(x=>x.id!==id);renderCart()}
-function clearCart(){cart=[];renderCart()}
-function totals(){const subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0);const discount=Math.max(0,Math.min(subtotal,Number(document.getElementById('discount').value)||0));const taxable=subtotal-discount;const gst=document.getElementById('gstToggle').checked?taxable*.18:0;return{subtotal,discount,gst,total:taxable+gst}}
-function renderCart(){const el=document.getElementById('cartItems');el.innerHTML=cart.length?cart.map(c=>`<div class="flex items-center gap-2 border-b border-rose-50 pb-2"><div class="flex-1 min-w-0"><div class="font-semibold text-sm truncate">${esc(c.name)}</div><div class="text-xs muted">${money(c.price)} each</div></div><div class="flex items-center gap-1"><button class="w-7 h-7 rounded bg-rose-50 text-rose-800" onclick="changeQty('${esc(c.id)}',-1)">−</button><span class="w-6 text-center text-sm font-bold">${c.qty}</span><button class="w-7 h-7 rounded bg-rose-50 text-rose-800" onclick="changeQty('${esc(c.id)}',1)">+</button></div><div class="font-bold text-sm w-20 text-right">${money(c.price*c.qty)}</div><button class="text-rose-400 p-1" onclick="removeCart('${esc(c.id)}')"><i class="fa-solid fa-trash"></i></button></div>`).join(''):'<div class="text-center muted text-sm py-6">Cart is empty. Tap a product to add.</div>';const t=totals();document.getElementById('subtotal').textContent=money(t.subtotal);document.getElementById('netTotal').textContent=money(t.total);document.getElementById('upiAmount').textContent=money(t.total);if(paymentMode==='UPI')makeQr(t.total)}
-function setPayment(mode){paymentMode=mode;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));document.getElementById('upiPanel').classList.toggle('hidden',mode!=='UPI');document.getElementById('splitPanel').classList.toggle('hidden',mode!=='Split/Udhar');if(mode==='UPI')makeQr(totals().total)}
-function makeQr(amount){const box=document.getElementById('upiQr');box.innerHTML='';if(window.QRCode)new QRCode(box,{text:`upi://pay?pa=7903358228@ybl&pn=Studio%20Manorama&am=${Number(amount).toFixed(2)}&cu=INR`,width:128,height:128,correctLevel:QRCode.CorrectLevel.M})}
-function nextInvoice(){const d=today().replaceAll('-','');const count=bills.filter(b=>(b.date||'')===today()).length+1;return 'SM-'+d+'-'+String(count).padStart(3,'0')}
-function checkout(){if(!cart.length){toast('Cart is empty');return}const t=totals();if(t.total<0){toast('Invalid total');return}let payment={mode:paymentMode};if(paymentMode==='Split/Udhar'){const cash=Number(document.getElementById('cashPart').value)||0,upi=Number(document.getElementById('upiPart').value)||0,udhar=Number(document.getElementById('udharPart').value)||0;if(Math.abs(cash+upi+udhar-t.total)>.01){toast('Cash + UPI + Udhar must equal net total');return}payment={mode:paymentMode,cash,upi,udhar}}else if(paymentMode==='UPI')payment.upi=t.total;
- const bill={id:uid(),invoice:nextInvoice(),date:today(),time:new Date().toLocaleTimeString('en-IN'),customer:document.getElementById('customerName').value.trim()||'Walk-in Customer',phone:document.getElementById('customerPhone').value.trim(),items:cart.map(x=>({...x})),subtotal:t.subtotal,discount:t.discount,gst:t.gst,total:t.total,payment};
- for(const c of cart){const p=inventory.find(x=>x.id===c.id);if(p&&p.category!=='Parlour Services')p.qty=Math.max(0,(Number(p.qty)||0)-c.qty)}
- bills.unshift(bill);lastBill=bill;persist('inventory',inventory);persist('bills',bills);cart=[];document.getElementById('discount').value='0';document.getElementById('gstToggle').checked=false;['customerName','customerPhone','cashPart','upiPart','udharPart'].forEach(id=>document.getElementById(id).value='');renderCart();renderProducts();renderStock();renderDaybook();printBill(bill);toast('Sale saved on this device')}
-function receiptHtml(b){const rows=b.items.map(i=>`<tr><td>${esc(i.name)}<br><small>${i.qty} × ${money(i.price)}</small></td><td style="text-align:right">${money(i.qty*i.price)}</td></tr>`).join('');const qr=b.payment.mode==='UPI'?`<div class="center" style="margin:8px 0"><div id="receiptQr" style="display:inline-block"></div><div>UPI: 7903358228@ybl</div></div>`:'';return `<div class="receipt-title">STUDIO MANORAMA</div><div class="center">Vidyapati Nagar, Samastipur</div><div class="center">Ph: 7542074417</div><hr style="border:0;border-top:1px dashed #333;margin:7px 0"><div>Invoice: ${esc(b.invoice)}</div><div>Date: ${esc(b.date)} ${esc(b.time)}</div><div>Customer: ${esc(b.customer)}</div>${b.phone?`<div>Phone: ${esc(b.phone)}</div>`:''}<table style="margin-top:7px"><thead><tr><th>Item</th><th style="text-align:right">Amount</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:7px"><div style="display:flex;justify-content:space-between"><span>Subtotal</span><b>${money(b.subtotal)}</b></div><div style="display:flex;justify-content:space-between"><span>Discount</span><b>-${money(b.discount)}</b></div>${b.gst?`<div style="display:flex;justify-content:space-between"><span>GST 18%</span><b>${money(b.gst)}</b></div>`:''}<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:bold;border-top:1px solid #000;padding-top:5px;margin-top:4px"><span>NET TOTAL</span><span>${money(b.total)}</span></div></div><div style="margin-top:7px">Payment: ${esc(b.payment.mode)}</div>${b.payment.mode==='Split/Udhar'?`<div>Cash ${money(b.payment.cash)} · UPI ${money(b.payment.upi)} · Udhar ${money(b.payment.udhar)}</div>`:''}${qr}<div class="center" style="margin-top:12px">Thank you! Visit Again.</div><div class="center">Goods once sold subject to shop policy.</div>`}
-function printBill(b){const area=document.getElementById('printArea');area.innerHTML=receiptHtml(b);if(b.payment.mode==='UPI'&&window.QRCode)new QRCode(area.querySelector('#receiptQr'),{text:`upi://pay?pa=7903358228@ybl&pn=Studio%20Manorama&am=${Number(b.total).toFixed(2)}&cu=INR`,width:100,height:100});setTimeout(()=>window.print(),250)}
-function renderDaybook(){const list=bills.filter(b=>b.date===today());document.getElementById('daybookCount').textContent=list.length+' bills';document.getElementById('daybookRows').innerHTML=list.length?list.map(b=>`<tr><td class="font-semibold">${esc(b.invoice)}</td><td>${esc(b.customer)}</td><td>${esc(b.payment?.mode||'')}</td><td class="font-bold">${money(b.total)}</td><td><button class="btn btn-light text-xs" onclick="reprint('${esc(b.id)}')"><i class="fa-solid fa-print"></i> Reprint</button></td></tr>`).join(''):'<tr><td colspan="5" class="text-center muted py-6">No sales recorded today.</td></tr>'}
-function reprint(id){const b=bills.find(x=>x.id===id);if(b)printBill(b)}
-function shareWhatsApp(){const b=lastBill;if(!b){toast('Complete a sale first to share its invoice');return}const text=`*STUDIO MANORAMA*%0AInvoice: ${encodeURIComponent(b.invoice)}%0ACustomer: ${encodeURIComponent(b.customer)}%0A${b.items.map(i=>encodeURIComponent(i.name+' × '+i.qty+' = '+money(i.price*i.qty))).join('%0A')}%0A*Total: ${encodeURIComponent(money(b.total))}*%0APayment: ${encodeURIComponent(b.payment.mode)}%0AThank you!`;window.open('https://wa.me/?text='+text,'_blank','noopener')}
-function renderStock(){const q=(document.getElementById('stockSearch')?.value||'').toLowerCase();const list=inventory.filter(p=>p.name.toLowerCase().includes(q)||String(p.barcode||'').toLowerCase().includes(q));document.getElementById('stockRows').innerHTML=list.length?list.map(p=>`<tr><td class="font-mono text-xs">${esc(p.barcode||'—')}</td><td class="font-semibold">${esc(p.name)}</td><td>${esc(p.category)}</td><td>${money(p.cost)}</td><td>${money(p.price)}</td><td><span class="${Number(p.qty)<=5?'text-amber-700 font-bold':''}">${Number(p.qty)||0}</span></td><td><div class="flex gap-1"><button class="btn btn-light text-xs" onclick="editProduct('${esc(p.id)}')"><i class="fa-solid fa-pen"></i></button><button class="btn btn-outline text-xs" onclick="deleteProduct('${esc(p.id)}')"><i class="fa-solid fa-trash"></i></button></div></td></tr>`).join(''):'<tr><td colspan="7" class="text-center muted py-8">No products found.</td></tr>';document.getElementById('statProducts').textContent=inventory.length;document.getElementById('statUnits').textContent=inventory.reduce((s,p)=>s+(Number(p.qty)||0),0);document.getElementById('statLow').textContent=inventory.filter(p=>Number(p.qty)<=5&&p.category!=='Parlour Services').length;document.getElementById('statValue').textContent=money(inventory.reduce((s,p)=>s+(Number(p.cost)||0)*(Number(p.qty)||0),0))}
-function openProductModal(){document.getElementById('productModalTitle').textContent='Add New Item';['editId','pBarcode','pName','pCost','pPrice'].forEach(id=>document.getElementById(id).value='');document.getElementById('pQty').value='0';document.getElementById('pCategory').value='Cosmetics';document.getElementById('productModal').classList.add('show')}
-function editProduct(id){const p=inventory.find(x=>x.id===id);if(!p)return;document.getElementById('productModalTitle').textContent='Edit Item';document.getElementById('editId').value=p.id;document.getElementById('pBarcode').value=p.barcode||'';document.getElementById('pName').value=p.name;document.getElementById('pCategory').value=p.category;document.getElementById('pCost').value=p.cost;document.getElementById('pPrice').value=p.price;document.getElementById('pQty').value=p.qty;document.getElementById('productModal').classList.add('show')}
-function saveProduct(){const id=document.getElementById('editId').value;const name=document.getElementById('pName').value.trim(),barcode=document.getElementById('pBarcode').value.trim();const cost=Number(document.getElementById('pCost').value),price=Number(document.getElementById('pPrice').value),qty=Number(document.getElementById('pQty').value);if(!name||!Number.isFinite(cost)||!Number.isFinite(price)||cost<0||price<0||!Number.isFinite(qty)||qty<0){toast('Enter valid name, prices and stock');return}if(barcode&&inventory.some(p=>p.barcode===barcode&&p.id!==id)){toast('This barcode already exists');return}const data={id:id||uid(),barcode,name,category:document.getElementById('pCategory').value,cost,price,qty};if(id)inventory=inventory.map(p=>p.id===id?data:p);else inventory.push(data);persist('inventory',inventory);closeModal('productModal');renderProducts();renderStock();toast('Product saved')}
-function deleteProduct(id){const p=inventory.find(x=>x.id===id);if(!p||!confirm(`Delete "${p.name}"? This cannot be undone.`))return;inventory=inventory.filter(x=>x.id!==id);persist('inventory',inventory);renderProducts();renderStock();toast('Product deleted')}
-function openStockMove(){const sel=document.getElementById('moveProduct');sel.innerHTML=inventory.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (Stock ${Number(p.qty)||0})</option>`).join('');if(!inventory.length){toast('Add a product first');return}document.getElementById('moveModal').classList.add('show')}
-function applyStockMove(){const p=inventory.find(x=>x.id===document.getElementById('moveProduct').value),qty=Number(document.getElementById('moveQty').value),type=document.getElementById('moveType').value;if(!p||!Number.isInteger(qty)||qty<1){toast('Enter a valid quantity');return}if(type==='out'&&qty>Number(p.qty)){toast('Not enough stock');return}p.qty=(Number(p.qty)||0)+(type==='in'?qty:-qty);moves.unshift({id:uid(),productId:p.id,name:p.name,type,qty,note:document.getElementById('moveNote').value,date:new Date().toISOString()});persist('inventory',inventory);localStorage.setItem(KEYS.moves,JSON.stringify(moves));closeModal('moveModal');renderStock();renderProducts();toast('Stock updated')}
-function closeModal(id){document.getElementById(id).classList.remove('show')}
-function backdropClose(e,id){if(e.target.id===id)closeModal(id)}
-const barcodeCatalog={
-'8901030860014':{name:'Lakme Product',category:'Cosmetics'},
-'8901030860021':{name:'Lakme Product',category:'Cosmetics'},
-'8902080000000':{name:'Ponds Product',category:'Cosmetics'},
-'8901030890005':{name:'Glow & Lovely Product',category:'Cosmetics'},
-'8901030870007':{name:'Maybelline Product',category:'Cosmetics'},
-'8901138500000':{name:'Himalaya Product',category:'Cosmetics'},
-'8901088000000':{name:'Vaseline Product',category:'Cosmetics'},
-'8901030800000':{name:'Nivea Product',category:'Cosmetics'},
-'8901234567890':{name:'Fogg Body Spray',category:'Perfumes'}
-};
-function barcodeAutofill(){const code=document.getElementById('pBarcode').value.trim();const p=barcodeCatalog[code];if(!p)return;document.getElementById('pName').value=p.name;document.getElementById('pCategory').value=p.category;toast('Starter catalogue match — verify product and prices')}
-async function openScanner(target){scanTarget=target;document.getElementById('scannerOverlay').classList.add('show');document.getElementById('scanError').textContent='';if(!window.Html5Qrcode){document.getElementById('scanError').textContent='Scanner library unavailable. Check internet connection.';return}try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:12,qrbox:{width:250,height:150},aspectRatio:1.6},code=>{handleScan(code);closeScanner()},()=>{});}catch(e){document.getElementById('scanError').textContent='Camera could not start. Check browser permission and HTTPS access.'}}
-async function closeScanner(){if(scanner){try{if(scanner.isScanning)await scanner.stop();await scanner.clear()}catch(e){}scanner=null}document.getElementById('scannerOverlay').classList.remove('show')}
-function handleScan(code){if(scanTarget==='billing'){const p=inventory.find(x=>String(x.barcode||'')===code);if(p){addToCart(p.id);toast('Added '+p.name)}else{document.getElementById('productSearch').value=code;renderProducts();toast('Barcode not found. Add it in Stock Master')}}else{document.getElementById('pBarcode').value=code;barcodeAutofill();if(!document.getElementById('productModal').classList.contains('show')){openProductModal();document.getElementById('pBarcode').value=code;barcodeAutofill()}}}
-function exportBackup(){const data={app:'Studio Manorama POS',exportedAt:new Date().toISOString(),inventory,bills,moves};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='studio-manorama-backup-'+today()+'.json';a.click();URL.revokeObjectURL(a.href)}
-function init(){inventory=readLocal(KEYS.inventory);bills=readLocal(KEYS.bills);moves=readLocal(KEYS.moves);seedIfEmpty();document.getElementById('todayLabel').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});renderProducts();renderCart();renderStock();renderDaybook();initFirebase();window.addEventListener('online',()=>setSync('Reconnecting…','offline'))}
-init();
-</script>
+    // Default Seed Products with Bangles & Jewelry
+    const defaultCatalog = [
+      { barcode: "BNG-100-180-101", name: "Lahthi Multi 4pc Set", category: "Bangles", cost: 100, price: 180, stock: 15 },
+      { barcode: "BNG-050-090-102", name: "Kangan Red Velvet 2pc", category: "Bangles", cost: 50, price: 90, stock: 20 },
+      { barcode: "JWL-150-280-201", name: "Bridal Kundan Necklace Set", category: "Jewelry", cost: 150, price: 280, stock: 8 },
+      { barcode: "JWL-040-080-202", name: "Golden Drop Earrings Jhumka", category: "Jewelry", cost: 40, price: 80, stock: 25 },
+      { barcode: "CSM-125-185-301", name: "Lakme Eyeconic Kajal Black", category: "Cosmetics", cost: 125, price: 185, stock: 12 },
+      { barcode: "CSM-095-145-302", name: "Ponds Bright Beauty Cream 50g", category: "Cosmetics", cost: 95, price: 145, stock: 14 },
+      { barcode: "PRF-160-230-401", name: "Fogg Body Spray 150ml", category: "Perfumes", cost: 160, price: 230, stock: 10 },
+      { barcode: "GFT-120-220-501", name: "Studio Photo Frame 8x12", category: "Gifts & Photo", cost: 120, price: 220, stock: 10 }
+    ];
+
+    let inventory = JSON.parse(localStorage.getItem("sm_pos_stock")) || defaultCatalog;
+    let billsHistory = JSON.parse(localStorage.getItem("sm_pos_bills")) || [];
+    let cart = [];
+    let selectedCat = "All";
+    let selectedPayMode = "Cash";
+    let editingItemIdx = -1;
+
+    // ================= INIT =================
+    window.addEventListener("DOMContentLoaded", () => {
+      renderProductCards();
+      renderStockTable();
+      renderDaybookTable();
+      renderBarcodeSelectionList();
+
+      if (stockRef) {
+        stockRef.on("value", snap => {
+          const val = snap.val();
+          if (val) {
+            inventory = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
+            localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
+            renderProductCards();
+            renderStockTable();
+            renderBarcodeSelectionList();
+          } else {
+            stockRef.set(defaultCatalog);
+          }
+        });
+      }
+
+      if (billsRef) {
+        billsRef.on("value", snap => {
+          const val = snap.val();
+          if (val) {
+            billsHistory = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
+            billsHistory.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+            localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
+            renderDaybookTable();
+          }
+        });
+      }
+    });
+
+    // ================= TABS =================
+    function switchTab(tabId) {
+      ['billing', 'stock', 'barcodes'].forEach(t => {
+        document.getElementById('view-' + t).classList.add('hidden');
+        const btn = document.getElementById('tab-' + t);
+        if (btn) {
+          if (t === 'billing' || t === 'stock') {
+            btn.className = "bg-[#630c20] text-pink-100 hover:bg-[#500919] font-bold text-xs px-3.5 py-2 rounded-xl border border-pink-900/40 flex items-center gap-1.5 transition";
+          } else {
+            btn.className = "bg-slate-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition";
+          }
+        }
+      });
+
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-' + tabId);
+      if (tabId === 'billing') {
+        activeBtn.className = "bg-white text-[#7b132b] font-bold text-xs px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 transition";
+        renderProductCards();
+      } else if (tabId === 'stock') {
+        activeBtn.className = "bg-white text-[#7b132b] font-bold text-xs px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 transition";
+        renderStockTable();
+      } else if (tabId === 'barcodes') {
+        activeBtn.className = "bg-amber-400 text-slate-900 font-black text-xs px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 transition";
+        renderBarcodeSelectionList();
+      }
+    }
+
+    // ================= 2. SMART BARCODE GENERATION =================
+    // Structure: [CAT]-[COST]-[MRP]-[RANDOM 3 DIGIT]
+    function autoGenerateSmartBarcode() {
+      const catCode = document.getElementById('inp-category').value || 'GEN';
+      const cost = parseInt(document.getElementById('inp-cost').value) || 0;
+      const price = parseInt(document.getElementById('inp-price').value) || 0;
+      const randSeq = Math.floor(100 + Math.random() * 900);
+
+      // Embedded Purchase Price and MRP in the Barcode!
+      const smartBarcode = `${catCode}-${cost}-${price}-${randSeq}`;
+      document.getElementById('inp-barcode').value = smartBarcode;
+    }
+
+    // ================= 3. STOCK MASTER =================
+    function toggleStockForm(show, isEdit = false) {
+      const panel = document.getElementById('stock-form-panel');
+      if (show) {
+        panel.classList.remove('hidden');
+        if (!isEdit) {
+          editingItemIdx = -1;
+          document.getElementById('form-header-title').innerText = "New Product Entry";
+          document.getElementById('inp-name').value = "";
+          document.getElementById('inp-cost').value = "50";
+          document.getElementById('inp-price').value = "90";
+          document.getElementById('inp-stock').value = "10";
+          autoGenerateSmartBarcode();
+        }
+      } else {
+        panel.classList.add('hidden');
+      }
+    }
+
+    function saveStockItem() {
+      const name = document.getElementById('inp-name').value.trim();
+      const barcode = document.getElementById('inp-barcode').value.trim();
+      const catSelect = document.getElementById('inp-category');
+      const catText = catSelect.options[catSelect.selectedIndex].text.split(' ')[0];
+      const cost = parseFloat(document.getElementById('inp-cost').value) || 0;
+      const price = parseFloat(document.getElementById('inp-price').value) || 0;
+      const stock = parseInt(document.getElementById('inp-stock').value) || 0;
+
+      if (!name) {
+        alert("Kripya Product Name bharein!");
+        return;
+      }
+      if (!barcode) {
+        alert("Kripya Barcode generate karein!");
+        return;
+      }
+
+      const itemData = { barcode, name, category: catText, cost, price, stock };
+
+      if (editingItemIdx >= 0) {
+        inventory[editingItemIdx] = itemData;
+      } else {
+        // If barcode already exists, update
+        const existingIdx = inventory.findIndex(i => i.barcode === barcode);
+        if (existingIdx >= 0) {
+          inventory[existingIdx] = itemData;
+        } else {
+          inventory.push(itemData);
+        }
+      }
+
+      localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
+      if (stockRef) stockRef.set(inventory).catch(() => {});
+
+      renderStockTable();
+      renderProductCards();
+      renderBarcodeSelectionList();
+      toggleStockForm(false);
+      alert("Product successfully save ho gaya!");
+    }
+
+    function editStock(idx) {
+      editingItemIdx = idx;
+      const item = inventory[idx];
+      toggleStockForm(true, true);
+      document.getElementById('form-header-title').innerText = "Edit Product: " + item.name;
+      document.getElementById('inp-name').value = item.name;
+      document.getElementById('inp-barcode').value = item.barcode;
+      document.getElementById('inp-cost').value = item.cost;
+      document.getElementById('inp-price').value = item.price;
+      document.getElementById('inp-stock').value = item.stock;
+
+      // Select category
+      const catSelect = document.getElementById('inp-category');
+      for (let i = 0; i < catSelect.options.length; i++) {
+        if (catSelect.options[i].text.includes(item.category)) {
+          catSelect.selectedIndex = i;
+          break;
+        }
+      }
+    }
+
+    function deleteStock(idx) {
+      if (confirm(`Kya aap "${inventory[idx].name}" ko delete karna chahte hain?`)) {
+        inventory.splice(idx, 1);
+        localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
+        if (stockRef) stockRef.set(inventory).catch(() => {});
+        renderStockTable();
+        renderProductCards();
+        renderBarcodeSelectionList();
+      }
+    }
+
+    function renderStockTable() {
+      const tbody = document.getElementById('stock-table-rows');
+      tbody.innerHTML = inventory.map((p, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2.5 px-3 font-mono font-bold text-[#7b132b]">${p.barcode}</td>
+          <td class="py-2.5 px-3 font-bold text-slate-800">${p.name}</td>
+          <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 font-bold text-slate-700">${p.category}</span></td>
+          <td class="py-2.5 px-3 text-right font-medium text-slate-600">₹${p.cost}</td>
+          <td class="py-2.5 px-3 text-right font-bold text-[#7b132b]">₹${p.price}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${p.stock < 10 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+              ${p.stock}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-center">
+            <button onclick="editStock(${idx})" class="text-indigo-600 font-bold hover:underline mr-2">Edit</button>
+            <button onclick="deleteStock(${idx})" class="text-red-500 font-bold hover:underline">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ================= 4. BILLING & CART =================
+    function filterCategory(cat) {
+      selectedCat = cat;
+      const cats = ['All', 'Bangles', 'Jewelry', 'Cosmetics', 'Perfumes', 'Parlour Services', 'Gifts & Photo'];
+      cats.forEach(c => {
+        const btn = document.getElementById('cat-' + c);
+        if (btn) {
+          if (c === cat) {
+            btn.className = "px-3.5 py-1.5 rounded-full bg-[#7b132b] text-white shadow whitespace-nowrap";
+          } else {
+            btn.className = "px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap";
+          }
+        }
+      });
+      renderProductCards();
+    }
+
+    function renderProductCards() {
+      const q = (document.getElementById('billing-search').value || '').toLowerCase().trim();
+      const grid = document.getElementById('billing-product-grid');
+
+      const filtered = inventory.filter(item => {
+        const matchCat = (selectedCat === "All") || item.category.toLowerCase().includes(selectedCat.toLowerCase());
+        const matchSearch = item.name.toLowerCase().includes(q) || item.barcode.toLowerCase().includes(q);
+        return matchCat && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="col-span-4 text-center py-10 text-slate-400 text-xs">No items found matching your filter.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => `
+        <div onclick="addToCart('${item.barcode}')" class="bg-white p-3 rounded-2xl border border-slate-200 hover:border-[#7b132b] hover:shadow-md transition cursor-pointer flex flex-col justify-between h-[105px]">
+          <div>
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">${item.category}</span>
+            <h4 class="font-bold text-slate-800 text-xs truncate leading-tight mt-0.5">${item.name}</h4>
+          </div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-[#7b132b] font-black text-sm">₹${item.price}</span>
+            <span class="text-[10px] text-slate-400 font-medium">Stock: ${item.stock}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function handleBarcodeEnter(e) {
+      if (e.key === 'Enter') {
+        handleQuickBarcodeAdd();
+      }
+    }
+
+    function handleQuickBarcodeAdd() {
+      const searchInput = document.getElementById('billing-search');
+      const val = searchInput.value.trim();
+      if (!val) return;
+
+      const matched = inventory.find(i => i.barcode.toLowerCase() === val.toLowerCase() || i.name.toLowerCase() === val.toLowerCase());
+      if (matched) {
+        addToCart(matched.barcode);
+        searchInput.value = '';
+        renderProductCards();
+      } else {
+        alert("Barcode ya Product nahi mila: " + val);
+      }
+    }
+
+    function addToCart(barcode) {
+      const item = inventory.find(i => i.barcode === barcode);
+      if (!item) return;
+
+      const existing = cart.find(c => c.barcode === barcode);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ ...item, qty: 1 });
+      }
+      renderCart();
+    }
+
+    function updateCartQty(idx, delta) {
+      cart[idx].qty += delta;
+      if (cart[idx].qty <= 0) cart.splice(idx, 1);
+      renderCart();
+    }
+
+    function removeCartItem(idx) {
+      cart.splice(idx, 1);
+      renderCart();
+    }
+
+    function clearCart() {
+      if (cart.length > 0 && confirm("Clear current invoice?")) {
+        cart = [];
+        renderCart();
+      }
+    }
+
+    function renderCart() {
+      const box = document.getElementById('cart-items-box');
+      const countLabel = document.getElementById('cart-item-count');
+      countLabel.innerText = cart.length + " items selected";
+
+      if (cart.length === 0) {
+        box.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs"><i class="fa-solid fa-cart-shopping text-xl mb-1 text-slate-300"></i><p>Cart is empty. Select products.</p></div>`;
+      } else {
+        box.innerHTML = cart.map((i, idx) => `
+          <div class="bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+            <div class="truncate flex-1 mr-2">
+              <div class="font-bold text-slate-800 truncate">${i.name}</div>
+              <div class="text-[10px] text-slate-400 font-mono">₹${i.price} each</div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <div class="flex items-center border rounded-lg bg-slate-50 overflow-hidden font-bold">
+                <button onclick="updateCartQty(${idx}, -1)" class="px-2 py-0.5 hover:bg-slate-200 text-slate-600">-</button>
+                <span class="px-2 text-xs">${i.qty}</span>
+                <button onclick="updateCartQty(${idx}, 1)" class="px-2 py-0.5 hover:bg-slate-200 text-slate-600">+</button>
+              </div>
+              <span class="font-bold text-slate-800 w-14 text-right">₹${(i.price * i.qty).toFixed(2)}</span>
+              <button onclick="removeCartItem(${idx})" class="text-slate-300 hover:text-red-500 ml-1">✕</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      calculateTotals();
+    }
+
+    function calculateTotals() {
+      const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+      const discount = parseFloat(document.getElementById('bill-discount').value) || 0;
+      const net = Math.max(0, subtotal - discount);
+
+      document.getElementById('lbl-subtotal').innerText = '₹' + subtotal.toFixed(2);
+      document.getElementById('lbl-net-total').innerText = '₹' + net.toFixed(2);
+    }
+
+    function setPaymentMode(mode) {
+      selectedPayMode = mode;
+      ['Cash', 'UPI'].forEach(m => {
+        const btn = document.getElementById('pm-' + m);
+        if (m === mode) {
+          btn.className = "py-2 rounded-xl border-2 border-[#7b132b] bg-pink-50 text-[#7b132b] font-bold text-xs flex items-center justify-center gap-1 shadow-xs";
+        } else {
+          btn.className = "py-2 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs flex items-center justify-center gap-1 hover:bg-slate-50";
+        }
+      });
+    }
+
+    // ================= 5. A4 INVOICE PRINT WITH QR, BOLD FOOTER & HINDI RULES =================
+    function generateAndPrintA4Bill() {
+      if (cart.length === 0) {
+        alert("Pehle cart me items add karein!");
+        return;
+      }
+
+      const invNo = "SM-" + Math.floor(100000 + Math.random() * 900000);
+      const custName = document.getElementById('bill-cust-name').value.trim() || 'Walk-in Customer';
+      const custPhone = document.getElementById('bill-cust-phone').value.trim() || 'N/A';
+      const subtotal = document.getElementById('lbl-subtotal').innerText;
+      const discount = parseFloat(document.getElementById('bill-discount').value) || 0;
+      const netTotal = document.getElementById('lbl-net-total').innerText;
+      const netAmountNum = parseFloat(netTotal.replace('₹', '')) || 0;
+      const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = new Date().toLocaleDateString('en-IN');
+
+      // Populate A4 Bill
+      document.getElementById('a4-inv-no').innerText = "Inv: " + invNo;
+      document.getElementById('a4-inv-date').innerText = "Date: " + dateStr + " " + timeStr;
+      document.getElementById('a4-cust-name').innerText = custName;
+      document.getElementById('a4-cust-phone').innerText = custPhone;
+      document.getElementById('a4-cust-paymode').innerText = selectedPayMode;
+
+      document.getElementById('a4-subtotal').innerText = subtotal;
+      document.getElementById('a4-discount').innerText = '- ₹' + discount.toFixed(2);
+      document.getElementById('a4-net-total').innerText = netTotal;
+
+      const itemsBody = document.getElementById('a4-bill-items-rows');
+      itemsBody.innerHTML = cart.map((item, idx) => `
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 6px; text-align: center;">${idx + 1}</td>
+          <td style="padding: 6px; font-weight: bold;">${item.name}</td>
+          <td style="padding: 6px; text-align: center; font-family: monospace; font-size: 11px;">${item.barcode}</td>
+          <td style="padding: 6px; text-align: center; font-weight: bold;">${item.qty}</td>
+          <td style="padding: 6px; text-align: right;">₹${item.price.toFixed(2)}</td>
+          <td style="padding: 6px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      // Generate UPI QR Code inside A4 Bill
+      const qrBox = document.getElementById('a4-bill-qrcode-box');
+      qrBox.innerHTML = '';
+      const upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_NAME)}&am=${netAmountNum.toFixed(2)}&cu=INR`;
+      new QRCode(qrBox, { text: upiUrl, width: 80, height: 80 });
+
+      // Deduct Stock
+      cart.forEach(c => {
+        const item = inventory.find(i => i.barcode === c.barcode);
+        if (item && item.stock !== undefined) {
+          item.stock = Math.max(0, item.stock - c.qty);
+        }
+      });
+      localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
+      if (stockRef) stockRef.set(inventory).catch(() => {});
+
+      // Record Bill
+      const billRecord = {
+        invoice: invNo,
+        date: dateStr + " " + timeStr,
+        timestamp: Date.now(),
+        customer: custName,
+        phone: custPhone,
+        itemsCount: cart.reduce((acc, i) => acc + i.qty, 0),
+        paymentMode: selectedPayMode,
+        total: netTotal,
+        items: [...cart]
+      };
+      billsHistory.unshift(billRecord);
+      localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
+      if (billsRef) billsRef.push(billRecord).catch(() => {});
+
+      // Activate A4 Bill print only
+      document.getElementById('printable-a4-bill').classList.remove('hidden');
+      document.getElementById('printable-barcode-sheet').classList.add('hidden');
+
+      setTimeout(() => {
+        window.print();
+        document.getElementById('printable-a4-bill').classList.add('hidden');
+      }, 200);
+
+      // Reset
+      cart = [];
+      renderCart();
+      document.getElementById('bill-cust-name').value = '';
+      document.getElementById('bill-cust-phone').value = '';
+      document.getElementById('bill-discount').value = '0';
+      renderProductCards();
+      renderStockTable();
+      renderDaybookTable();
+    }
+
+    function renderDaybookTable() {
+      const tbody = document.getElementById('daybook-rows');
+      if (billsHistory.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">No transactions recorded yet.</td></tr>`;
+      } else {
+        tbody.innerHTML = billsHistory.map(b => `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2.5 px-3 font-mono font-bold text-[#7b132b]">${b.invoice}</td>
+            <td class="py-2.5 px-3 text-slate-500">${b.date}</td>
+            <td class="py-2.5 px-3 font-bold text-slate-800">${b.customer}</td>
+            <td class="py-2.5 px-3 text-slate-600">${b.itemsCount} items</td>
+            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.paymentMode === 'UPI' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'}">${b.paymentMode}</span></td>
+            <td class="py-2.5 px-3 text-right font-bold text-slate-900">${b.total}</td>
+            <td class="py-2.5 px-3 text-center">
+              <button onclick="reprintSavedBill('${b.invoice}')" class="text-[#7b132b] hover:underline font-bold text-xs">A4 Print</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function reprintSavedBill(invNo) {
+      const b = billsHistory.find(i => i.invoice === invNo);
+      if (!b) return;
+
+      document.getElementById('a4-inv-no').innerText = "Inv: " + b.invoice;
+      document.getElementById('a4-inv-date').innerText = "Date: " + b.date;
+      document.getElementById('a4-cust-name').innerText = b.customer;
+      document.getElementById('a4-cust-phone').innerText = b.phone;
+      document.getElementById('a4-cust-paymode').innerText = b.paymentMode;
+      document.getElementById('a4-subtotal').innerText = b.total;
+      document.getElementById('a4-discount').innerText = '- ₹0.00';
+      document.getElementById('a4-net-total').innerText = b.total;
+
+      const itemsBody = document.getElementById('a4-bill-items-rows');
+      itemsBody.innerHTML = (b.items || []).map((item, idx) => `
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 6px; text-align: center;">${idx + 1}</td>
+          <td style="padding: 6px; font-weight: bold;">${item.name}</td>
+          <td style="padding: 6px; text-align: center; font-family: monospace; font-size: 11px;">${item.barcode}</td>
+          <td style="padding: 6px; text-align: center; font-weight: bold;">${item.qty}</td>
+          <td style="padding: 6px; text-align: right;">₹${item.price.toFixed(2)}</td>
+          <td style="padding: 6px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      const qrBox = document.getElementById('a4-bill-qrcode-box');
+      qrBox.innerHTML = '';
+      const netVal = parseFloat(b.total.replace('₹', '')) || 0;
+      const upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_NAME)}&am=${netVal.toFixed(2)}&cu=INR`;
+      new QRCode(qrBox, { text: upiUrl, width: 80, height: 80 });
+
+      document.getElementById('printable-a4-bill').classList.remove('hidden');
+      document.getElementById('printable-barcode-sheet').classList.add('hidden');
+      setTimeout(() => {
+        window.print();
+        document.getElementById('printable-a4-bill').classList.add('hidden');
+      }, 200);
+    }
+
+    // ================= 6. A4 BARCODE STICKER SHEET GENERATOR =================
+    function renderBarcodeSelectionList() {
+      const tbody = document.getElementById('barcode-selection-rows');
+      tbody.innerHTML = inventory.map((item, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2 px-3 text-center">
+            <input type="checkbox" id="chk-bc-${idx}" class="bc-print-chk rounded text-[#7b132b] w-4 h-4" checked>
+          </td>
+          <td class="py-2 px-3 font-mono font-bold text-slate-800">${item.barcode}</td>
+          <td class="py-2 px-3 font-bold">${item.name}</td>
+          <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 font-bold">${item.category}</span></td>
+          <td class="py-2 px-3 text-right font-bold text-[#7b132b]">₹${item.price}</td>
+          <td class="py-2 px-3 text-center">
+            <input type="number" id="qty-bc-${idx}" value="${item.stock || 4}" min="1" max="100" class="w-20 border rounded-lg p-1 text-center font-bold text-xs bg-slate-50">
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function selectAllStockForBarcodePrint() {
+      const chks = document.querySelectorAll('.bc-print-chk');
+      chks.forEach(c => c.checked = true);
+    }
+
+    function printA4BarcodeSheet() {
+      const container = document.getElementById('a4-barcode-grid-container');
+      container.innerHTML = '';
+
+      let totalLabels = 0;
+
+      inventory.forEach((item, idx) => {
+        const chk = document.getElementById(`chk-bc-${idx}`);
+        const qtyInp = document.getElementById(`qty-bc-${idx}`);
+        if (chk && chk.checked) {
+          const qty = parseInt(qtyInp.value) || 1;
+          for (let q = 0; q < qty; q++) {
+            totalLabels++;
+            const labelDiv = document.createElement('div');
+            labelDiv.style.border = '1px dashed #666';
+            labelDiv.style.padding = '3mm 2mm';
+            labelDiv.style.borderRadius = '4px';
+            labelDiv.style.textAlign = 'center';
+            labelDiv.style.background = '#fff';
+            labelDiv.style.breakInside = 'avoid';
+
+            labelDiv.innerHTML = `
+              <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; color: #7b132b; letter-spacing: 0.5px;">Studio Manorama</div>
+              <div style="font-size: 9px; font-weight: bold; color: #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 130px; margin: 1px auto;">${item.name}</div>
+              <svg id="bc-svg-${idx}-${q}" style="max-width: 100%; height: 35px; margin: 1px auto;"></svg>
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: bold; padding: 0 4px; margin-top: 1px;">
+                <span>${item.category}</span>
+                <span style="font-size: 10px; color: #000;">MRP: ₹${item.price}</span>
+              </div>
+            `;
+            container.appendChild(labelDiv);
+
+            // Render SVG Barcode via JsBarcode
+            setTimeout(() => {
+              try {
+                JsBarcode(`#bc-svg-${idx}-${q}`, item.barcode, {
+                  format: "CODE128",
+                  width: 1.2,
+                  height: 28,
+                  fontSize: 9,
+                  displayValue: true,
+                  margin: 0
+                });
+              } catch(e) {
+                console.warn("JsBarcode Render:", e);
+              }
+            }, 10);
+          }
+        }
+      });
+
+      if (totalLabels === 0) {
+        alert("Kripya print karne ke liye kam se kam ek product select karein!");
+        return;
+      }
+
+      document.getElementById('printable-a4-bill').classList.add('hidden');
+      document.getElementById('printable-barcode-sheet').classList.remove('hidden');
+
+      setTimeout(() => {
+        window.print();
+        document.getElementById('printable-barcode-sheet').classList.add('hidden');
+      }, 500);
+    }
+  </script>
 </body>
 </html>
