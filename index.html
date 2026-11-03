@@ -537,19 +537,32 @@
       // Listen to Realtime Stock Updates from Firebase
       stockRef.on('value', (snapshot) => {
         const data = snapshot.val();
-        if (data && Array.isArray(data)) {
-          inventory = data;
-          localStorage.setItem('sm_stock', JSON.stringify(inventory));
-          renderProductsGrid();
-          renderStockTable();
-          updateSyncPill(true);
-        } else if (!data) {
-          // If database is empty, seed initial stock
-          stockRef.set(defaultCatalog);
+        if (data) {
+          // Convert to Array whether Firebase returns an Array or an Object with keys
+          let items = Array.isArray(data) ? data : Object.values(data);
+          // Filter out null / undefined items if any
+          items = items.filter(i => i && typeof i === 'object');
+          if (items.length > 0) {
+            inventory = items;
+            localStorage.setItem('sm_stock', JSON.stringify(inventory));
+            renderProductsGrid();
+            renderStockTable();
+            updateSyncPill(true);
+          }
+        } else if (data === null) {
+          // If database is completely empty, upload initial catalog
+          stockRef.set(defaultCatalog).catch(() => {});
         }
       }, (error) => {
-        console.error("Firebase Stock Error:", error);
-        updateSyncPill(false);
+        console.warn("Firebase Stock Listener Error:", error);
+        // If permission denied or locked rules, show status
+        if (error.code === "PERMISSION_DENIED") {
+          updateSyncPill(false);
+          const pillText = document.getElementById('sync-pill-text');
+          if (pillText) pillText.innerText = "Rules Locked";
+        } else {
+          updateSyncPill(false);
+        }
       });
 
       // Listen to Realtime Bills Updates from Firebase
@@ -605,8 +618,16 @@ All bills and stock entries are synced live between Mobile and PC.");
         const btn = document.getElementById('tab-btn-' + t);
         if (btn) btn.className = "bg-white text-slate-700 hover:bg-pink-50 font-bold text-xs px-4 py-2 rounded-xl border border-slate-200 flex items-center gap-1.5";
       });
-      document.getElementById('view-' + tab).classList.remove('hidden');
-      document.getElementById('tab-btn-' + tab).className = "bg-[#7b132b] text-white font-bold text-xs px-4 py-2 rounded-xl shadow flex items-center gap-1.5";
+      const activeEl = document.getElementById('view-' + tab);
+      if (activeEl) activeEl.classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-btn-' + tab);
+      if (activeBtn) activeBtn.className = "bg-[#7b132b] text-white font-bold text-xs px-4 py-2 rounded-xl shadow flex items-center gap-1.5";
+
+      if (tab === 'stock') {
+        renderStockTable();
+      } else if (tab === 'billing') {
+        renderProductsGrid();
+      }
     }
 
     // CATEGORY SELECTION
@@ -1041,7 +1062,7 @@ All bills and stock entries are synced live between Mobile and PC.");
     }
 
     function saveProductModalData() {
-      const barcode = document.getElementById('m-barcode').value.trim();
+      const barcode = document.getElementById('m-barcode').value.trim() || ("SM-" + Math.floor(100 + Math.random() * 900));
       const name = document.getElementById('m-name').value.trim();
       const category = document.getElementById('m-category').value;
       const stock = parseInt(document.getElementById('m-stock').value) || 0;
@@ -1053,27 +1074,49 @@ All bills and stock entries are synced live between Mobile and PC.");
         return;
       }
 
-      if (currentEditIdx !== null) {
-        inventory[currentEditIdx] = { barcode, name, category, stock, cost, price };
+      const itemData = { barcode, name, category, stock, cost, price };
+
+      if (currentEditIdx !== null && currentEditIdx >= 0) {
+        inventory[currentEditIdx] = itemData;
       } else {
-        inventory.push({ barcode, name, category, stock, cost, price });
+        const existingIdx = inventory.findIndex(p => p.barcode === barcode);
+        if (existingIdx >= 0) {
+          inventory[existingIdx] = itemData;
+        } else {
+          inventory.push(itemData);
+        }
       }
 
-      // Save directly to Firebase Realtime Database
-      stockRef.set(inventory);
-
+      // 1. Immediately save to LocalStorage (Instant local responsiveness)
+      localStorage.setItem('sm_stock', JSON.stringify(inventory));
       renderProductsGrid();
       renderStockTable();
       closeProductModal();
+
+      // 2. Sync to Firebase Cloud with error catching
+      if (typeof stockRef !== 'undefined' && stockRef) {
+        stockRef.set(inventory).catch(err => {
+          console.warn("Firebase Stock Sync Warning:", err);
+          if (err.message && err.message.includes("permission_denied")) {
+            alert("Firebase Rules are locked! In Firebase Console, set Rules to { '.read': true, '.write': true } and click Publish.");
+          }
+        });
+      }
     }
 
     function deleteProduct(idx) {
+      if (idx < 0 || idx >= inventory.length) return;
       if (confirm(`Delete ${inventory[idx].name}?`)) {
         inventory.splice(idx, 1);
-        // Save directly to Firebase Realtime Database
-        stockRef.set(inventory);
+        localStorage.setItem('sm_stock', JSON.stringify(inventory));
         renderProductsGrid();
         renderStockTable();
+
+        if (typeof stockRef !== 'undefined' && stockRef) {
+          stockRef.set(inventory).catch(err => {
+            console.warn("Firebase Stock Delete Warning:", err);
+          });
+        }
       }
     }
 
