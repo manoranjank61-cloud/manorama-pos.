@@ -378,11 +378,17 @@
       </div>
       <div class="space-y-2.5 text-xs">
         <div>
-          <label class="font-bold text-slate-600 block mb-1">Barcode</label>
-          <div class="flex gap-2">
-            <input id="m-barcode" type="text" class="w-full border rounded-lg p-2 font-mono bg-slate-50 font-bold">
-            <button onclick="autoBarcode()" class="bg-slate-200 px-3 rounded-lg font-bold">Auto</button>
+          <div class="flex justify-between items-center mb-1">
+            <label class="font-bold text-slate-700">Barcode / Item Code (कैमरा स्कैन या डालें)</label>
           </div>
+          <div class="flex gap-1.5">
+            <input id="m-barcode" type="text" oninput="lookupAndFillBarcodeDetails(this.value)" onkeydown="if(event.key==='Enter'){lookupAndFillBarcodeDetails(this.value); event.preventDefault();}" placeholder="Scan barcode or type code..." class="flex-1 border rounded-xl p-2 font-mono bg-slate-50 font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#7b132b] outline-none">
+            <button type="button" onclick="openLiveCamera('stock')" class="bg-slate-900 hover:bg-black text-white px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shadow">
+              <i class="fa-solid fa-camera"></i> <span>Scan</span>
+            </button>
+            <button type="button" onclick="autoBarcode()" class="bg-slate-200 hover:bg-slate-300 px-2.5 py-2 rounded-xl font-bold text-slate-700">Auto</button>
+          </div>
+          <div id="barcode-autofill-status" class="text-[10px] mt-1 hidden"></div>
         </div>
         <div>
           <label class="font-bold text-slate-600 block mb-1">Product Name</label>
@@ -946,31 +952,53 @@
       `).join('');
     }
 
-    // BARCODE SCANNER
-    function openLiveCamera(mode) {
+    // BARCODE SCANNER FOR BILLING & STOCK MASTER
+    function openLiveCamera(mode = 'billing') {
+      activeCameraMode = mode;
       document.getElementById('camera-modal').classList.remove('hidden');
-      document.getElementById('camera-status-msg').innerText = "Opening rear camera...";
+      const statusMsg = document.getElementById('camera-status-msg');
+      statusMsg.innerText = mode === 'stock' ? "Opening camera for Stock Item Scan..." : "Opening rear camera for Billing Scan...";
 
+      if (html5QrScanner) {
+        html5QrScanner.stop().catch(() => {}).then(startScannerInstance);
+      } else {
+        startScannerInstance();
+      }
+    }
+
+    function startScannerInstance() {
       html5QrScanner = new Html5Qrcode("camera-reader");
+      const config = { fps: 15, qrbox: { width: 250, height: 180 } };
+
+      const onScanSuccess = (decodedText) => {
+        const barcode = decodedText.trim();
+        closeLiveCamera();
+        if (activeCameraMode === 'stock') {
+          // Fill into stock modal barcode and autofill details
+          const barcodeInput = document.getElementById('m-barcode');
+          if (barcodeInput) {
+            barcodeInput.value = barcode;
+            lookupAndFillBarcodeDetails(barcode);
+          }
+        } else {
+          // Billing mode -> add to cart
+          addToCart(barcode);
+        }
+      };
+
       html5QrScanner.start(
         { facingMode: { exact: "environment" } },
-        { fps: 15, qrbox: { width: 250, height: 180 } },
-        (decodedText) => {
-          closeLiveCamera();
-          addToCart(decodedText.trim());
-        },
+        config,
+        onScanSuccess,
         () => {}
       ).catch(() => {
         html5QrScanner.start(
           { facingMode: "environment" },
-          { fps: 15, qrbox: { width: 250, height: 180 } },
-          (decodedText) => {
-            closeLiveCamera();
-            addToCart(decodedText.trim());
-          },
+          config,
+          onScanSuccess,
           () => {}
         ).catch(() => {
-          document.getElementById('camera-status-msg').innerText = "Camera permission denied!";
+          document.getElementById('camera-status-msg').innerText = "Camera permission denied! Please allow camera access in browser.";
         });
       });
     }
@@ -997,11 +1025,12 @@
       const html5QrCode = new Html5Qrcode("camera-reader");
       html5QrCode.scanFile(file, true)
         .then(decodedText => {
-          addToCart(decodedText.trim());
-          alert("Scanned: " + decodedText);
+          const barcode = decodedText.trim();
+          addToCart(barcode);
+          alert("Scanned Barcode: " + barcode);
         })
         .catch(() => {
-          alert("Could not detect barcode from image.");
+          alert("Could not detect barcode from image. Please ensure good lighting.");
         });
     }
 
@@ -1024,17 +1053,127 @@
       if (pin) alert("Admin Verified!");
     }
 
+
+    // ================= POPULAR BRANDED PRODUCTS DATABASE FOR AUTOFILL =================
+    const brandDatabase = {
+      // Cosmetics & Kajal & Lipsticks
+      "8901030383121": { name: "Lakme Eyeconic Kajal Deep Black 0.35g", category: "Cosmetics", cost: 125, price: 185 },
+      "8901030584214": { name: "Ponds Bright Beauty Anti-Spot Serum Cream 50g", category: "Cosmetics", cost: 95, price: 145 },
+      "8901030704513": { name: "Fair & Lovely (Glow & Lovely) Advanced Multivitamin 50g", category: "Cosmetics", cost: 78, price: 110 },
+      "8901248154011": { name: "Maybelline Colossal Kajal Super Black", category: "Cosmetics", cost: 120, price: 180 },
+      "8901248154028": { name: "Maybelline Super Stay Matte Ink Lipstick", category: "Cosmetics", cost: 240, price: 349 },
+      "8901414002314": { name: "Swiss Beauty Nail Polish High Shine 10ml", category: "Cosmetics", cost: 45, price: 90 },
+      "8901030612450": { name: "Vaseline Deep Moisture Body Lotion 100ml", category: "Cosmetics", cost: 80, price: 125 },
+      "8901138511210": { name: "Himalaya Purifying Neem Face Wash 100ml", category: "Cosmetics", cost: 90, price: 140 },
+      "8901030826451": { name: "Dove Hair Fall Rescue Shampoo 180ml", category: "Cosmetics", cost: 110, price: 175 },
+      "8901030882310": { name: "Tresemme Keratin Smooth Shampoo 185ml", category: "Cosmetics", cost: 135, price: 210 },
+      "8904052402123": { name: "Biotique Bio Dandelion Ageless Lightening Serum 40ml", category: "Cosmetics", cost: 160, price: 230 },
+      "8904245700201": { name: "Mamaearth Onion Shampoo with Plant Keratin 250ml", category: "Cosmetics", cost: 220, price: 349 },
+      "8901030366124": { name: "Lakme Complexion Care (CC) Cream 30g", category: "Cosmetics", cost: 195, price: 299 },
+      "8901030773014": { name: "Ponds Super Light Gel Oil-Free Moisturiser 73g", category: "Cosmetics", cost: 130, price: 200 },
+      "8906014400213": { name: "Dabur Gulabari Premium Rose Water 120ml", category: "Cosmetics", cost: 35, price: 50 },
+      "8901030654120": { name: "Clinic Plus Strong & Long Health Shampoo 175ml", category: "Cosmetics", cost: 75, price: 110 },
+      "8901248234010": { name: "Maybelline Fit Me Matte+Poreless Liquid Foundation", category: "Cosmetics", cost: 380, price: 549 },
+      "8904052401010": { name: "Biotique Bio Morning Nectar Nourish & Hydrate Lotion", category: "Cosmetics", cost: 130, price: 199 },
+      "8901030894511": { name: "Indulekha Bringha Ayurvedic Anti Hair Fall Oil 100ml", category: "Cosmetics", cost: 310, price: 432 },
+      "8901030372101": { name: "Lakme Rose Face Powder with Sunscreen 40g", category: "Cosmetics", cost: 115, price: 175 },
+      // Perfumes
+      "8901526001012": { name: "Fogg Body Spray 150ml Marco", category: "Perfumes", cost: 160, price: 230 },
+      "8901526001029": { name: "Fogg Scent Xtremo Eau De Parfum 100ml", category: "Perfumes", cost: 340, price: 499 },
+      "8901030752101": { name: "Axe Dark Temptation Deodorant Body Spray 150ml", category: "Perfumes", cost: 145, price: 215 },
+      "8901030752125": { name: "Wild Stone Code Platinum Body Perfume 120ml", category: "Perfumes", cost: 180, price: 275 },
+      "8906009450018": { name: "Engage W2 Perfume Spray for Women 120ml", category: "Perfumes", cost: 150, price: 220 },
+      "8906009450025": { name: "Engage M1 Perfume Spray for Men 120ml", category: "Perfumes", cost: 150, price: 220 },
+      // Studio & Photo & Parlour
+      "SM-101": { name: "bindi", category: "Cosmetics", cost: 5, price: 10 },
+      "SM-102": { name: "Alta", category: "Cosmetics", cost: 12, price: 20 },
+      "SM-103": { name: "ruber", category: "Cosmetics", cost: 2, price: 5 },
+      "SM-104": { name: "Lahthi set multi", category: "Cosmetics", cost: 180, price: 250 },
+      "SM-105": { name: "sindur", category: "Cosmetics", cost: 5, price: 10 },
+      "SM-106": { name: "lahthi 4 pc", category: "Cosmetics", cost: 100, price: 150 },
+      "SM-PARLOUR-1": { name: "Bridal Facial Package", category: "Parlour Services", cost: 300, price: 1200 },
+      "SM-PHOTO-1": { name: "Designer Photo Frame 8x12", category: "Gifts & Photo", cost: 150, price: 299 },
+      "SM-PHOTO-2": { name: "Studio Passport Photo (8 Pcs Set)", category: "Gifts & Photo", cost: 10, price: 70 },
+      "SM-PHOTO-3": { name: "Urgent Studio Passport Photo (4 Pcs)", category: "Gifts & Photo", cost: 8, price: 50 },
+      "SM-PHOTO-4": { name: "Full Size Photo Print (12x18)", category: "Gifts & Photo", cost: 70, price: 200 }
+    };
+
+    let activeCameraMode = 'billing'; // 'billing' or 'stock'
+
+    async function lookupAndFillBarcodeDetails(barcode) {
+      if (!barcode) return;
+      barcode = barcode.trim();
+      const statusLabel = document.getElementById('barcode-autofill-status');
+      if (statusLabel) {
+        statusLabel.classList.remove('hidden');
+        statusLabel.innerHTML = '<span class="text-indigo-600 font-bold"><i class="fa-solid fa-spinner fa-spin"></i> Checking company database...</span>';
+      }
+
+      // 1. Check brand database first
+      if (brandDatabase[barcode]) {
+        const item = brandDatabase[barcode];
+        document.getElementById('m-name').value = item.name;
+        document.getElementById('m-category').value = item.category || 'Cosmetics';
+        if (item.cost) document.getElementById('m-cost').value = item.cost;
+        if (item.price) document.getElementById('m-price').value = item.price;
+        if (statusLabel) {
+          statusLabel.innerHTML = '<span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check"></i> ' + item.name + ' - Company details & MRP auto-filled!</span>';
+        }
+        return item;
+      }
+
+      // 2. Check current existing inventory
+      const existing = inventory.find(i => i.barcode === barcode);
+      if (existing) {
+        document.getElementById('m-name').value = existing.name;
+        document.getElementById('m-category').value = existing.category;
+        document.getElementById('m-cost').value = existing.cost;
+        document.getElementById('m-price').value = existing.price;
+        document.getElementById('m-stock').value = existing.stock;
+        if (statusLabel) {
+          statusLabel.innerHTML = '<span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check"></i> Existing item found in stock! Details loaded.</span>';
+        }
+        return existing;
+      }
+
+      // 3. Fallback to Open Beauty Facts API for international/Indian barcode products
+      try {
+        const res = await fetch(`https://world.openbeautyfacts.org/api/v0/product/${barcode}.json`);
+        const json = await res.json();
+        if (json.status === 1 && json.product) {
+          const prod = json.product;
+          const name = prod.product_name || prod.product_name_en || (prod.brands ? prod.brands + " Product" : "Branded Product");
+          document.getElementById('m-name').value = name;
+          document.getElementById('m-category').value = "Cosmetics";
+          if (statusLabel) {
+            statusLabel.innerHTML = '<span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check"></i> Brand found online: ' + name + '</span>';
+          }
+          return { name, category: "Cosmetics" };
+        }
+      } catch (e) {}
+
+      if (statusLabel) {
+        statusLabel.innerHTML = '<span class="text-slate-400">New barcode. Enter product name and price below.</span>';
+      }
+      return null;
+    }
+
     // ADD / EDIT PRODUCT MODAL (FIREBASE SYNC)
     let currentEditIdx = null;
     function openProductModal() {
       currentEditIdx = null;
       document.getElementById('prod-modal-title').innerText = "Add New Item";
-      document.getElementById('m-barcode').value = "SM-" + Math.floor(100 + Math.random() * 900);
+      document.getElementById('m-barcode').value = "";
       document.getElementById('m-name').value = "";
       document.getElementById('m-category').value = "Cosmetics";
       document.getElementById('m-stock').value = "10";
-      document.getElementById('m-cost').value = "50";
-      document.getElementById('m-price').value = "100";
+      document.getElementById('m-cost').value = "0";
+      document.getElementById('m-price').value = "0";
+      const statusLabel = document.getElementById('barcode-autofill-status');
+      if (statusLabel) {
+        statusLabel.classList.add('hidden');
+        statusLabel.innerHTML = '';
+      }
       document.getElementById('product-modal').classList.remove('hidden');
     }
 
@@ -1048,6 +1187,11 @@
       document.getElementById('m-stock').value = p.stock;
       document.getElementById('m-cost').value = p.cost;
       document.getElementById('m-price').value = p.price;
+      const statusLabel = document.getElementById('barcode-autofill-status');
+      if (statusLabel) {
+        statusLabel.classList.add('hidden');
+        statusLabel.innerHTML = '';
+      }
       document.getElementById('product-modal').classList.remove('hidden');
     }
 
@@ -1152,3 +1296,4 @@
   </script>
 </body>
 </html>
+Displaying index.html.
