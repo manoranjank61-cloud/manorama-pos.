@@ -47,18 +47,32 @@
         border-collapse: collapse !important;
       }
       body.printing-bill #printable-a4-bill #a4-bill-qrcode-box {
-        display: inline-block !important;
+        display: block !important;
         width: 105px !important;
         height: 105px !important;
+        max-height: 105px !important;
+        overflow: hidden !important;
         background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
       }
-      body.printing-bill #printable-a4-bill #a4-bill-qrcode-box img,
+      /* Hide the redundant canvas to prevent duplicate/overlay QR code */
       body.printing-bill #printable-a4-bill #a4-bill-qrcode-box canvas {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+      /* Only display the single sharp image */
+      body.printing-bill #printable-a4-bill #a4-bill-qrcode-box img {
         display: block !important;
         visibility: visible !important;
         width: 105px !important;
         height: 105px !important;
+        max-width: 105px !important;
+        max-height: 105px !important;
         margin: 0 !important;
+        object-fit: contain !important;
       }
       body.printing-bill #printable-barcode-sheet {
         display: none !important;
@@ -1229,6 +1243,11 @@
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
           });
+          // Immediately hide canvas element so only 1 single QR image is displayed
+          setTimeout(() => {
+            const canvases = qrBox.querySelectorAll('canvas');
+            canvases.forEach(c => { c.style.display = 'none'; c.remove(); });
+          }, 30);
         } catch (e) {
           console.warn("QR Render Error:", e);
         }
@@ -1360,6 +1379,11 @@
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
           });
+          // Immediately hide canvas element so only 1 single QR image is displayed
+          setTimeout(() => {
+            const canvases = qrBox.querySelectorAll('canvas');
+            canvases.forEach(c => { c.style.display = 'none'; c.remove(); });
+          }, 30);
         } catch (e) {
           console.warn("QR Render Error:", e);
         }
@@ -1663,3 +1687,4 @@
   </script>
 </body>
 </html>
+Displaying index.html.
