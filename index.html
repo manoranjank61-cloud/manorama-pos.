@@ -444,13 +444,13 @@
             <div>
               <label class="block font-bold text-slate-700 mb-1">Category (श्रेणी)</label>
               <select id="inp-category" onchange="autoGenerateSmartBarcode()" class="w-full border rounded-xl p-2 bg-white font-semibold">
-                <option value="PHT">Photography (फोटो एवं ज़ेरॉक्स)</option>
-                <option value="BNG">Bangles (लाहठी / चूड़ी)</option>
-                <option value="JWL">Jewelry (गहने / आभूषण)</option>
-                <option value="CSM">Cosmetics (सौंदर्य प्रसाधन)</option>
-                <option value="PRF">Perfumes (इत्र / बॉडी स्प्रे)</option>
-                <option value="PLR">Parlour Services (पार्लर)</option>
-                <option value="GFT">Gifts & Photo (उपहार / फोटो)</option>
+                <option value="Photography">Photography (फोटो एवं ज़ेरॉक्स)</option>
+                <option value="Bangles">Bangles (लाहठी / चूड़ी)</option>
+                <option value="Jewelry">Jewelry (गहने / आभूषण)</option>
+                <option value="Cosmetics">Cosmetics (सौंदर्य प्रसाधन)</option>
+                <option value="Perfumes">Perfumes (इत्र / बॉडी स्प्रे)</option>
+                <option value="Parlour Services">Parlour Services (पार्लर)</option>
+                <option value="Gifts & Photo">Gifts & Photo (उपहार / फोटो)</option>
               </select>
             </div>
             <div>
@@ -848,7 +848,17 @@
     // ================= 2. SMART BARCODE GENERATION =================
     // Structure: [CAT]-[COST]-[MRP]-[RANDOM 3 DIGIT]
     function autoGenerateSmartBarcode() {
-      const catCode = document.getElementById('inp-category').value || 'GEN';
+      const catVal = document.getElementById('inp-category').value || 'GEN';
+      const catPrefixMap = {
+        'Photography': 'PHT',
+        'Bangles': 'BNG',
+        'Jewelry': 'JWL',
+        'Cosmetics': 'CSM',
+        'Perfumes': 'PRF',
+        'Parlour Services': 'PLR',
+        'Gifts & Photo': 'GFT'
+      };
+      const catCode = catPrefixMap[catVal] || (catVal.substring(0, 3).toUpperCase());
       const cost = parseInt(document.getElementById('inp-cost').value) || 0;
       const price = parseInt(document.getElementById('inp-price').value) || 0;
       const randSeq = Math.floor(100 + Math.random() * 900);
@@ -881,7 +891,7 @@
       const name = document.getElementById('inp-name').value.trim();
       const barcode = document.getElementById('inp-barcode').value.trim();
       const catSelect = document.getElementById('inp-category');
-      const catText = catSelect.options[catSelect.selectedIndex].text.split(' ')[0];
+      const catText = catSelect.value || 'Cosmetics';
       const cost = parseFloat(document.getElementById('inp-cost').value) || 0;
       const price = parseFloat(document.getElementById('inp-price').value) || 0;
       const stock = parseInt(document.getElementById('inp-stock').value) || 0;
@@ -933,7 +943,7 @@
       // Select category
       const catSelect = document.getElementById('inp-category');
       for (let i = 0; i < catSelect.options.length; i++) {
-        if (catSelect.options[i].text.includes(item.category)) {
+        if (catSelect.options[i].value === item.category || catSelect.options[i].text.toLowerCase().includes((item.category || '').toLowerCase())) {
           catSelect.selectedIndex = i;
           break;
         }
@@ -990,12 +1000,27 @@
       renderProductCards();
     }
 
+    function isCategoryMatch(itemCategory, selectedCategory) {
+      if (!selectedCategory || selectedCategory === "All") return true;
+      if (!itemCategory) return false;
+      const ic = itemCategory.toLowerCase().trim();
+      const sc = selectedCategory.toLowerCase().trim();
+      if (ic === sc) return true;
+      if (ic.includes(sc) || sc.includes(ic)) return true;
+      if (sc.includes('photo') && (ic.includes('photo') || ic.includes('pht') || ic.includes('xerox'))) return true;
+      if (sc.includes('parlour') && ic.includes('parlour')) return true;
+      if (sc.includes('gift') && ic.includes('gift')) return true;
+      if (sc.includes('bangle') && (ic.includes('bangle') || ic.includes('lahthi') || ic.includes('chudi'))) return true;
+      if (sc.includes('jewelry') && (ic.includes('jewel') || ic.includes('gehne'))) return true;
+      return false;
+    }
+
     function renderProductCards() {
       const q = (document.getElementById('billing-search').value || '').toLowerCase().trim();
       const grid = document.getElementById('billing-product-grid');
 
       const filtered = inventory.filter(item => {
-        const matchCat = (selectedCat === "All") || item.category.toLowerCase().includes(selectedCat.toLowerCase());
+        const matchCat = isCategoryMatch(item.category, selectedCat);
         const matchSearch = item.name.toLowerCase().includes(q) || item.barcode.toLowerCase().includes(q);
         return matchCat && matchSearch;
       });
