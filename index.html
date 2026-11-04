@@ -1169,23 +1169,27 @@
       const invNo = "SM-" + Math.floor(100000 + Math.random() * 900000);
       const custName = document.getElementById('bill-cust-name').value.trim() || 'Walk-in Customer';
       const custPhone = document.getElementById('bill-cust-phone').value.trim() || 'N/A';
-      const subtotal = document.getElementById('lbl-subtotal').innerText;
-      const discount = parseFloat(document.getElementById('bill-discount').value) || 0;
-      const netTotal = document.getElementById('lbl-net-total').innerText;
-      const netAmountNum = parseFloat(netTotal.replace('₹', '')) || 0;
+      
+      const subtotalNum = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+      const discNum = parseFloat(document.getElementById('bill-discount').value) || 0;
+      const netAmountNum = Math.max(0, subtotalNum - discNum);
+      const subtotalStr = '₹' + subtotalNum.toFixed(2);
+      const discountStr = '- ₹' + discNum.toFixed(2);
+      const netTotalStr = '₹' + netAmountNum.toFixed(2);
+
       const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
       const dateStr = new Date().toLocaleDateString('en-IN');
 
-      // Populate A4 Bill
+      // Populate A4 Bill with explicit subtotal, discount, and net payable
       document.getElementById('a4-inv-no').innerText = "Inv: " + invNo;
       document.getElementById('a4-inv-date').innerText = "Date: " + dateStr + " " + timeStr;
       document.getElementById('a4-cust-name').innerText = custName;
       document.getElementById('a4-cust-phone').innerText = custPhone;
       document.getElementById('a4-cust-paymode').innerText = selectedPayMode;
 
-      document.getElementById('a4-subtotal').innerText = subtotal;
-      document.getElementById('a4-discount').innerText = '- ₹' + discount.toFixed(2);
-      document.getElementById('a4-net-total').innerText = netTotal;
+      document.getElementById('a4-subtotal').innerText = subtotalStr;
+      document.getElementById('a4-discount').innerText = discountStr;
+      document.getElementById('a4-net-total').innerText = netTotalStr;
 
       const itemsBody = document.getElementById('a4-bill-items-rows');
       itemsBody.innerHTML = cart.map((item, idx) => `
@@ -1199,8 +1203,6 @@
         </tr>
       `).join('');
 
-// User uploaded static QR image is permanently embedded in user-payment-qr-img
-
       // Deduct Stock
       cart.forEach(c => {
         const item = inventory.find(i => i.barcode === c.barcode);
@@ -1211,7 +1213,7 @@
       localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
       if (stockRef) stockRef.set(inventory).catch(() => {});
 
-      // Record Bill
+      // Record Bill (saving subtotal and discount permanently)
       const billRecord = {
         invoice: invNo,
         date: dateStr + " " + timeStr,
@@ -1220,14 +1222,16 @@
         phone: custPhone,
         itemsCount: cart.reduce((acc, i) => acc + i.qty, 0),
         paymentMode: selectedPayMode,
-        total: netTotal,
+        subtotal: subtotalStr,
+        discount: discNum,
+        total: netTotalStr,
         items: [...cart]
       };
       billsHistory.unshift(billRecord);
       localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
       if (billsRef) billsRef.push(billRecord).catch(() => {});
 
-      // Activate A4 Bill print only (Barcode sheet strictly excluded)
+      // Activate A4 Bill print only
       document.body.classList.add('printing-bill');
       document.body.classList.remove('printing-stickers');
       document.getElementById('printable-a4-bill').classList.remove('hidden');
@@ -1237,17 +1241,18 @@
         window.print();
         document.body.classList.remove('printing-bill');
         document.getElementById('printable-a4-bill').classList.add('hidden');
+        
+        // Reset form ONLY AFTER print dialog opens
+        cart = [];
+        document.getElementById('bill-cust-name').value = '';
+        document.getElementById('bill-cust-phone').value = '';
+        document.getElementById('bill-discount').value = '0';
+        renderCart();
+        renderProductCards();
+        renderStockTable();
+        renderDaybookTable();
+        updateDashboardMetrics();
       }, 450);
-
-      // Reset
-      cart = [];
-      renderCart();
-      document.getElementById('bill-cust-name').value = '';
-      document.getElementById('bill-cust-phone').value = '';
-      document.getElementById('bill-discount').value = '0';
-      renderProductCards();
-      renderStockTable();
-      renderDaybookTable();
     }
 
     function renderDaybookTable() {
@@ -1278,13 +1283,20 @@
       const b = billsHistory.find(i => i.invoice === invNo);
       if (!b) return;
 
+      const discNum = parseFloat(b.discount || 0);
+      let subtotalStr = b.subtotal;
+      if (!subtotalStr) {
+        const totNum = parseFloat((b.total || '0').replace('₹', '')) || 0;
+        subtotalStr = '₹' + (totNum + discNum).toFixed(2);
+      }
+
       document.getElementById('a4-inv-no').innerText = "Inv: " + b.invoice;
       document.getElementById('a4-inv-date').innerText = "Date: " + b.date;
       document.getElementById('a4-cust-name').innerText = b.customer;
       document.getElementById('a4-cust-phone').innerText = b.phone;
       document.getElementById('a4-cust-paymode').innerText = b.paymentMode;
-      document.getElementById('a4-subtotal').innerText = b.total;
-      document.getElementById('a4-discount').innerText = '- ₹0.00';
+      document.getElementById('a4-subtotal').innerText = subtotalStr;
+      document.getElementById('a4-discount').innerText = '- ₹' + discNum.toFixed(2);
       document.getElementById('a4-net-total').innerText = b.total;
 
       const itemsBody = document.getElementById('a4-bill-items-rows');
@@ -1298,8 +1310,6 @@
           <td style="padding: 6px 8px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
         </tr>
       `).join('');
-
-// User uploaded static QR image is permanently embedded in user-payment-qr-img
 
       document.body.classList.add('printing-bill');
       document.body.classList.remove('printing-stickers');
