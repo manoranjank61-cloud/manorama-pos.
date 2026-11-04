@@ -145,6 +145,7 @@
           <!-- CATEGORY PILLS (Including Bangles & Jewelry) -->
           <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold scrollbar-none">
             <button onclick="filterCategory('All')" id="cat-All" class="px-3.5 py-1.5 rounded-full bg-[#7b132b] text-white shadow whitespace-nowrap">All Items</button>
+            <button onclick="filterCategory('Photography')" id="cat-Photography" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">📸 Photography & Xerox</button>
             <button onclick="filterCategory('Bangles')" id="cat-Bangles" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">Bangles (लाहठी/चूड़ी)</button>
             <button onclick="filterCategory('Jewelry')" id="cat-Jewelry" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">Jewelry (गहने)</button>
             <button onclick="filterCategory('Cosmetics')" id="cat-Cosmetics" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">Cosmetics</button>
@@ -260,6 +261,7 @@
             <div>
               <label class="block font-bold text-slate-700 mb-1">Category (श्रेणी)</label>
               <select id="inp-category" onchange="autoGenerateSmartBarcode()" class="w-full border rounded-xl p-2 bg-white font-semibold">
+                <option value="PHT">Photography (फोटो एवं ज़ेरॉक्स)</option>
                 <option value="BNG">Bangles (लाहठी / चूड़ी)</option>
                 <option value="JWL">Jewelry (गहने / आभूषण)</option>
                 <option value="CSM">Cosmetics (सौंदर्य प्रसाधन)</option>
@@ -503,7 +505,25 @@
     }
 
     // Default Seed Products with Bangles & Jewelry
-    const defaultCatalog = [
+        const defaultCatalog = [
+      // Photography & Xerox Services
+      { barcode: "PHT-010-050-801", name: "Photo 8PP (8 Passport Photo)", category: "Photography", cost: 10, price: 50, stock: 999 },
+      { barcode: "PHT-008-030-802", name: "Photo 4PP (4 Passport Photo)", category: "Photography", cost: 8, price: 30, stock: 999 },
+      { barcode: "PHT-001-003-803", name: "Xerox / Photocopy (प्रति कॉपी)", category: "Photography", cost: 1, price: 3.00, stock: 999 },
+      { barcode: "PHT-005-020-804", name: "Lamination (लेमिनेशन)", category: "Photography", cost: 5, price: 20, stock: 999 },
+      { barcode: "PHT-010-025-805", name: "Photo Print 4x6", category: "Photography", cost: 10, price: 25, stock: 999 },
+      { barcode: "PHT-015-035-806", name: "Photo Print 5x7", category: "Photography", cost: 15, price: 35, stock: 999 },
+      { barcode: "PHT-025-050-807", name: "Photo Print 6x8", category: "Photography", cost: 25, price: 50, stock: 999 },
+      { barcode: "PHT-035-080-808", name: "Photo Print 8x11", category: "Photography", cost: 35, price: 80, stock: 999 },
+      { barcode: "PHT-040-100-809", name: "Photo Print 8x12", category: "Photography", cost: 40, price: 100, stock: 999 },
+      { barcode: "PHT-060-150-810", name: "Photo Print 10x15", category: "Photography", cost: 60, price: 150, stock: 999 },
+      { barcode: "PHT-080-200-811", name: "Photo Print 12x18", category: "Photography", cost: 80, price: 200, stock: 999 },
+      { barcode: "PHT-150-350-812", name: "Photo Print 16x20", category: "Photography", cost: 150, price: 350, stock: 999 },
+      { barcode: "PHT-200-500-813", name: "Photo Print 20x24", category: "Photography", cost: 200, price: 500, stock: 999 },
+      { barcode: "PHT-350-800-814", name: "Photo Print 30x32", category: "Photography", cost: 350, price: 800, stock: 999 },
+      { barcode: "PHT-400-900-815", name: "Photo Print 24x36", category: "Photography", cost: 400, price: 900, stock: 999 },
+      
+      // Bangles, Jewelry & Cosmetics
       { barcode: "BNG-100-180-101", name: "Lahthi Multi 4pc Set", category: "Bangles", cost: 100, price: 180, stock: 15 },
       { barcode: "BNG-050-090-102", name: "Kangan Red Velvet 2pc", category: "Bangles", cost: 50, price: 90, stock: 20 },
       { barcode: "JWL-150-280-201", name: "Bridal Kundan Necklace Set", category: "Jewelry", cost: 150, price: 280, stock: 8 },
@@ -514,7 +534,19 @@
       { barcode: "GFT-120-220-501", name: "Studio Photo Frame 8x12", category: "Gifts & Photo", cost: 120, price: 220, stock: 10 }
     ];
 
-    let inventory = JSON.parse(localStorage.getItem("sm_pos_stock")) || defaultCatalog;
+        let localStock = JSON.parse(localStorage.getItem("sm_pos_stock"));
+    // Ensure all default photography items exist in inventory
+    if (localStock && Array.isArray(localStock)) {
+      defaultCatalog.forEach(d => {
+        if (!localStock.some(i => i.name === d.name || i.barcode === d.barcode)) {
+          localStock.push(d);
+        }
+      });
+      inventory = localStock;
+      localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
+    } else {
+      inventory = defaultCatalog;
+    }
     let billsHistory = JSON.parse(localStorage.getItem("sm_pos_bills")) || [];
     let cart = [];
     let selectedCat = "All";
@@ -715,7 +747,7 @@
     // ================= 4. BILLING & CART =================
     function filterCategory(cat) {
       selectedCat = cat;
-      const cats = ['All', 'Bangles', 'Jewelry', 'Cosmetics', 'Perfumes', 'Parlour Services', 'Gifts & Photo'];
+      const cats = ['All', 'Photography', 'Bangles', 'Jewelry', 'Cosmetics', 'Perfumes', 'Parlour Services', 'Gifts & Photo'];
       cats.forEach(c => {
         const btn = document.getElementById('cat-' + c);
         if (btn) {
@@ -792,6 +824,15 @@
       renderCart();
     }
 
+    function updateCartPrice(idx, newPrice) {
+      const p = parseFloat(newPrice);
+      if (!isNaN(p) && p >= 0) {
+        cart[idx].price = p;
+        calculateTotals();
+        renderCart();
+      }
+    }
+
     function updateCartQty(idx, delta) {
       cart[idx].qty += delta;
       if (cart[idx].qty <= 0) cart.splice(idx, 1);
@@ -819,10 +860,13 @@
         box.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs"><i class="fa-solid fa-cart-shopping text-xl mb-1 text-slate-300"></i><p>Cart is empty. Select products.</p></div>`;
       } else {
         box.innerHTML = cart.map((i, idx) => `
-          <div class="bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-            <div class="truncate flex-1 mr-2">
-              <div class="font-bold text-slate-800 truncate">${i.name}</div>
-              <div class="text-[10px] text-slate-400 font-mono">₹${i.price} each</div>
+          <div class="bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs gap-1">
+            <div class="truncate flex-1 mr-1">
+              <div class="font-bold text-slate-800 truncate" title="${i.name}">${i.name}</div>
+              <div class="flex items-center gap-1 mt-0.5">
+                <span class="text-[10px] text-slate-500">Rate ₹:</span>
+                <input type="number" min="0" step="any" value="${i.price}" onchange="updateCartPrice(${idx}, this.value)" class="w-16 border rounded px-1 py-0.5 text-xs font-bold text-[#7b132b] bg-amber-50/60 focus:bg-white outline-none" title="Rate change karein">
+              </div>
             </div>
             <div class="flex items-center gap-1.5">
               <div class="flex items-center border rounded-lg bg-slate-50 overflow-hidden font-bold">
@@ -830,7 +874,7 @@
                 <span class="px-2 text-xs">${i.qty}</span>
                 <button onclick="updateCartQty(${idx}, 1)" class="px-2 py-0.5 hover:bg-slate-200 text-slate-600">+</button>
               </div>
-              <span class="font-bold text-slate-800 w-14 text-right">₹${(i.price * i.qty).toFixed(2)}</span>
+              <span class="font-bold text-slate-800 w-16 text-right">₹${(i.price * i.qty).toFixed(2)}</span>
               <button onclick="removeCartItem(${idx})" class="text-slate-300 hover:text-red-500 ml-1">✕</button>
             </div>
           </div>
