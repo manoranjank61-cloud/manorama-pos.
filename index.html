@@ -17,13 +17,13 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-      <style>
+        <style>
     @media print {
       body * {
         visibility: hidden !important;
         display: none !important;
       }
-      /* When printing A4 Bill */
+      /* PRINTING A4 BILL ONLY */
       body.printing-bill #printable-a4-bill,
       body.printing-bill #printable-a4-bill * {
         visibility: visible !important;
@@ -34,20 +34,25 @@
         left: 0 !important;
         top: 0 !important;
         width: 100% !important;
-        margin: 0 !important;
+        max-width: 194mm !important;
+        margin: 0 auto !important;
         padding: 4mm !important;
         background: #ffffff !important;
         color: #000000 !important;
+        box-sizing: border-box !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      body.printing-bill #printable-a4-bill .flex-row-print {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
       }
       body.printing-bill #printable-a4-bill table {
         display: table !important;
-      }
-      body.printing-bill #printable-a4-bill tr {
-        display: table-row !important;
-      }
-      body.printing-bill #printable-a4-bill th,
-      body.printing-bill #printable-a4-bill td {
-        display: table-cell !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
       }
       body.printing-bill #printable-a4-bill thead {
         display: table-header-group !important;
@@ -55,8 +60,30 @@
       body.printing-bill #printable-a4-bill tbody {
         display: table-row-group !important;
       }
+      body.printing-bill #printable-a4-bill tr {
+        display: table-row !important;
+        page-break-inside: avoid !important;
+      }
+      body.printing-bill #printable-a4-bill th,
+      body.printing-bill #printable-a4-bill td {
+        display: table-cell !important;
+      }
+      body.printing-bill #a4-bill-qrcode-box {
+        display: inline-block !important;
+        width: 105px !important;
+        height: 105px !important;
+        background: #ffffff !important;
+      }
+      body.printing-bill #a4-bill-qrcode-box img,
+      body.printing-bill #a4-bill-qrcode-box canvas {
+        display: block !important;
+        visibility: visible !important;
+        width: 105px !important;
+        height: 105px !important;
+        margin: 0 auto !important;
+      }
 
-      /* When printing Barcode Sticker Sheet (ONLY Barcodes Grid - NO Thank you/terms) */
+      /* PRINTING BARCODE STICKERS ONLY */
       body.printing-stickers #printable-barcode-sheet,
       body.printing-stickers #printable-barcode-sheet * {
         visibility: visible !important;
@@ -84,7 +111,7 @@
 
       @page {
         size: A4 portrait;
-        margin: 6mm;
+        margin: 8mm;
       }
     }
   </style>
@@ -370,74 +397,76 @@
 
   </main>
 
-  <!-- ================= PRINTABLE 1: A4 INVOICE BILL ================= -->
-  <div id="printable-a4-bill" class="hidden font-sans text-black bg-white p-6 max-w-[210mm] mx-auto border">
+    <!-- ================= PRINTABLE 1: A4 INVOICE BILL (CLEAN PRINT LAYOUT) ================= -->
+  <div id="printable-a4-bill" class="hidden font-sans text-black bg-white p-6 max-w-[195mm] mx-auto border border-black">
     <!-- STORE HEADER -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #7b132b; padding-bottom: 10px; margin-bottom: 12px;">
       <div>
-        <h1 style="font-size: 24px; font-weight: 900; margin: 0; color: #7b132b; text-transform: uppercase; letter-spacing: 0.5px;">STUDIO MANORAMA</h1>
-        <p style="font-size: 13px; font-weight: bold; margin: 2px 0;">Vidyapati Nagar, Samastipur (Bihar - 848503)</p>
-        <p style="font-size: 12px; margin: 2px 0;">Deals in: Cosmetics, Bangles (लाहठी), Jewelry, Perfumes & Studio Gifts</p>
-        <p style="font-size: 12px; font-weight: bold; margin: 2px 0;">Mobile: +91 7542074417 | UPI ID: 7903358228@ybl</p>
+        <h1 style="font-size: 26px; font-weight: 900; margin: 0; color: #7b132b; text-transform: uppercase; letter-spacing: 0.5px;">STUDIO MANORAMA</h1>
+        <p style="font-size: 13px; font-weight: bold; margin: 3px 0 1px 0; color: #111;">Vidyapati Nagar, Samastipur (Bihar - 848503)</p>
+        <p style="font-size: 11px; margin: 1px 0; color: #333;">Deals in: Cosmetics, Bangles (लाहठी), Jewelry, Photography & Xerox</p>
+        <p style="font-size: 12px; font-weight: bold; margin: 2px 0 0 0; color: #000;">Mob: +91 7542074417 | UPI ID: 7903358228@ybl</p>
       </div>
-      <div style="text-align: right;">
-        <span style="display: inline-block; background: #000; color: #fff; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 4px; margin-bottom: 4px;">TAX INVOICE</span>
-        <p style="font-size: 13px; font-weight: bold; margin: 2px 0;" id="a4-inv-no">Inv: SM-1001</p>
-        <p style="font-size: 12px; margin: 2px 0;" id="a4-inv-date">Date: 03/11/2026</p>
+      <div style="text-align: right; min-width: 140px;">
+        <span style="display: inline-block; background: #7b132b; color: #fff; font-size: 11px; font-weight: bold; padding: 3px 10px; border-radius: 4px; text-transform: uppercase;">TAX INVOICE</span>
+        <p style="font-size: 13px; font-weight: bold; margin: 4px 0 1px 0;" id="a4-inv-no">Inv: SM-1001</p>
+        <p style="font-size: 11px; margin: 1px 0; color: #444;" id="a4-inv-date">Date: 04/11/2026</p>
       </div>
     </div>
 
-    <!-- CUSTOMER DETAILS -->
-    <div style="display: flex; justify-content: space-between; border: 1px solid #ccc; padding: 6px 10px; margin-bottom: 12px; font-size: 12px; background: #fafafa;">
+    <!-- CUSTOMER & INVOICE DETAILS -->
+    <div style="display: flex; justify-content: space-between; border: 1px solid #999; padding: 6px 12px; margin-bottom: 12px; font-size: 12px; background: #fdfdfd; border-radius: 4px;">
       <div>
-        <strong>Customer Name:</strong> <span id="a4-cust-name">Walk-in</span>
+        <strong>Customer Name:</strong> <span id="a4-cust-name" style="font-weight: bold;">Walk-in</span>
       </div>
       <div>
-        <strong>Contact No:</strong> <span id="a4-cust-phone">N/A</span>
+        <strong>Mobile / WhatsApp:</strong> <span id="a4-cust-phone">N/A</span>
       </div>
       <div>
-        <strong>Payment Mode:</strong> <span id="a4-cust-paymode" style="font-weight: bold; text-transform: uppercase;">CASH</span>
+        <strong>Payment Mode:</strong> <span id="a4-cust-paymode" style="font-weight: bold; text-transform: uppercase; color: #7b132b;">CASH</span>
       </div>
     </div>
 
     <!-- ITEMS TABLE -->
-    <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px;">
       <thead>
-        <tr style="background: #f1f1f1; border-top: 1px solid #000; border-bottom: 1px solid #000;">
-          <th style="padding: 6px; text-align: center; width: 40px;">S.N.</th>
-          <th style="padding: 6px; text-align: left;">Item Description</th>
-          <th style="padding: 6px; text-align: center; width: 130px;">Barcode / Code</th>
-          <th style="padding: 6px; text-align: center; width: 60px;">Qty</th>
-          <th style="padding: 6px; text-align: right; width: 80px;">Rate (₹)</th>
-          <th style="padding: 6px; text-align: right; width: 90px;">Total (₹)</th>
+        <tr style="background: #f4eff1; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000;">
+          <th style="padding: 6px 4px; text-align: center; width: 35px; border-right: 1px solid #ddd;">S.N.</th>
+          <th style="padding: 6px 8px; text-align: left; border-right: 1px solid #ddd;">Item Description</th>
+          <th style="padding: 6px 6px; text-align: center; width: 140px; border-right: 1px solid #ddd;">Barcode / Code</th>
+          <th style="padding: 6px 6px; text-align: center; width: 55px; border-right: 1px solid #ddd;">Qty</th>
+          <th style="padding: 6px 8px; text-align: right; width: 85px; border-right: 1px solid #ddd;">Rate (₹)</th>
+          <th style="padding: 6px 8px; text-align: right; width: 95px;">Total (₹)</th>
         </tr>
       </thead>
-      <tbody id="a4-bill-items-rows"></tbody>
+      <tbody id="a4-bill-items-rows" style="border-bottom: 1.5px solid #000;"></tbody>
     </table>
 
     <!-- TOTALS & PAYMENT QR SECTION -->
-    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #000; padding-top: 8px; margin-bottom: 16px;">
-      <!-- PAYMENT QR CODE -->
-      <div style="display: flex; align-items: center; gap: 12px; border: 1px dashed #7b132b; padding: 8px; border-radius: 6px;">
-        <div id="a4-bill-qrcode-box" style="width: 80px; height: 80px;"></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; border: 1.5px solid #7b132b; padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; background: #fffcfd;">
+      <!-- HIGH RESOLUTION SCANNABLE PAYMENT QR -->
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="border: 1px solid #ccc; padding: 4px; background: #fff; border-radius: 4px;">
+          <div id="a4-bill-qrcode-box" style="width: 105px; height: 105px; display: flex; align-items: center; justify-content: center;"></div>
+        </div>
         <div>
-          <p style="font-size: 11px; font-weight: bold; color: #7b132b; margin: 0 0 2px 0;">Scan to Pay via UPI</p>
-          <p style="font-size: 10px; margin: 0;">GPay, PhonePe, Paytm</p>
-          <p style="font-size: 10px; font-weight: bold; margin: 2px 0 0 0;">7903358228@ybl</p>
+          <p style="font-size: 13px; font-weight: bold; color: #7b132b; margin: 0 0 2px 0;">Scan to Pay via UPI</p>
+          <p style="font-size: 11px; color: #444; margin: 0 0 4px 0;">Google Pay • PhonePe • Paytm • BHIM</p>
+          <p style="font-size: 11px; font-weight: bold; margin: 0; background: #f1f5f9; padding: 2px 6px; border-radius: 3px; display: inline-block;">UPI: 7903358228@ybl</p>
         </div>
       </div>
 
-      <!-- AMOUNT CALCULATION -->
+      <!-- AMOUNT BREAKDOWN -->
       <div style="width: 250px; font-size: 12px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span>Subtotal:</span>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px dashed #ccc;">
+          <span style="color: #444;">Subtotal:</span>
           <span id="a4-subtotal" style="font-weight: bold;">₹0.00</span>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span>Discount:</span>
-          <span id="a4-discount">- ₹0.00</span>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 2px; border-bottom: 1px dashed #ccc;">
+          <span style="color: #444;">Discount:</span>
+          <span id="a4-discount" style="font-weight: bold; color: #047857;">- ₹0.00</span>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px 0; color: #7b132b;">
+        <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; border-top: 2px solid #7b132b; border-bottom: 2px solid #7b132b; padding: 4px 0; color: #7b132b;">
           <span>NET PAYABLE:</span>
           <span id="a4-net-total">₹0.00</span>
         </div>
@@ -445,20 +474,20 @@
     </div>
 
     <!-- TERMS & CONDITIONS (HINDI TRANSLATED) & BOLD FOOTER -->
-    <div style="border-top: 1px solid #ccc; padding-top: 10px; margin-top: 10px;">
-      <div style="font-size: 11px; line-height: 1.6; color: #222; background: #fff8f8; border: 1px solid #ffd6d6; padding: 8px 12px; border-radius: 6px;">
-        <div style="font-weight: bold; text-decoration: underline; margin-bottom: 2px; color: #7b132b;">दुकान के नियम एवं शर्तें (Terms & Conditions):</div>
+    <div>
+      <div style="font-size: 11px; line-height: 1.6; color: #1e293b; background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px;">
+        <div style="font-weight: bold; margin-bottom: 2px; color: #7b132b; text-decoration: underline;">दुकान के नियम एवं शर्तें (Terms & Conditions):</div>
         <div>• <strong>बिका हुआ माल वापस नहीं होगा। (No Return)</strong></div>
         <div>• <strong>स्टॉक उपलब्ध होने पर ही केवल एक्सचेंज संभव है। (Exchange only possible on availability)</strong></div>
         <div>• <strong>काउंटर छोड़ने से पहले कृपया अपने सामान की जांच अवश्य कर लें। (Before leaving counter please check your items)</strong></div>
       </div>
 
       <!-- BOLD FOOTER -->
-      <div style="text-align: center; margin-top: 16px;">
+      <div style="text-align: center; margin-top: 14px; padding-top: 8px; border-top: 1px dashed #bbb;">
         <h2 style="font-size: 18px; font-weight: 900; margin: 0; color: #000; text-transform: uppercase; letter-spacing: 1px;">
           THANK YOU! VISIT AGAIN!
         </h2>
-        <p style="font-size: 10px; color: #555; margin-top: 2px;">Studio Manorama | धन्यवाद! फिर पधारें!</p>
+        <p style="font-size: 11px; font-weight: bold; color: #7b132b; margin: 2px 0 0 0;">Studio Manorama | धन्यवाद! फिर पधारें!</p>
       </div>
     </div>
   </div>
@@ -935,21 +964,35 @@
 
       const itemsBody = document.getElementById('a4-bill-items-rows');
       itemsBody.innerHTML = cart.map((item, idx) => `
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 6px; text-align: center;">${idx + 1}</td>
-          <td style="padding: 6px; font-weight: bold;">${item.name}</td>
-          <td style="padding: 6px; text-align: center; font-family: monospace; font-size: 11px;">${item.barcode}</td>
-          <td style="padding: 6px; text-align: center; font-weight: bold;">${item.qty}</td>
-          <td style="padding: 6px; text-align: right;">₹${item.price.toFixed(2)}</td>
-          <td style="padding: 6px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
+        <tr style="border-bottom: 1px solid #ddd;">
+          <td style="padding: 5px 4px; text-align: center; border-right: 1px solid #eee;">${idx + 1}</td>
+          <td style="padding: 5px 8px; font-weight: bold; border-right: 1px solid #eee;">${item.name}</td>
+          <td style="padding: 5px 6px; text-align: center; font-family: monospace; font-size: 11px; border-right: 1px solid #eee;">${item.barcode}</td>
+          <td style="padding: 5px 6px; text-align: center; font-weight: bold; border-right: 1px solid #eee;">${item.qty}</td>
+          <td style="padding: 5px 8px; text-align: right; border-right: 1px solid #eee;">₹${item.price.toFixed(2)}</td>
+          <td style="padding: 5px 8px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
         </tr>
       `).join('');
 
-      // Generate UPI QR Code inside A4 Bill
+      // Generate Scannable UPI QR Code inside A4 Bill
       const qrBox = document.getElementById('a4-bill-qrcode-box');
       qrBox.innerHTML = '';
-      const upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_NAME)}&am=${netAmountNum.toFixed(2)}&cu=INR`;
-      new QRCode(qrBox, { text: upiUrl, width: 80, height: 80 });
+      let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_NAME)}&cu=INR`;
+      if (netAmountNum > 0) {
+        upiUrl += `&am=${netAmountNum.toFixed(2)}&tn=${encodeURIComponent('Bill ' + invNo)}`;
+      }
+      try {
+        new QRCode(qrBox, {
+          text: upiUrl,
+          width: 105,
+          height: 105,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        console.warn("QR Render Error:", e);
+      }
 
       // Deduct Stock
       cart.forEach(c => {
@@ -987,7 +1030,7 @@
         window.print();
         document.body.classList.remove('printing-bill');
         document.getElementById('printable-a4-bill').classList.add('hidden');
-      }, 200);
+      }, 450);
 
       // Reset
       cart = [];
@@ -1036,21 +1079,35 @@
 
       const itemsBody = document.getElementById('a4-bill-items-rows');
       itemsBody.innerHTML = (b.items || []).map((item, idx) => `
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 6px; text-align: center;">${idx + 1}</td>
-          <td style="padding: 6px; font-weight: bold;">${item.name}</td>
-          <td style="padding: 6px; text-align: center; font-family: monospace; font-size: 11px;">${item.barcode}</td>
-          <td style="padding: 6px; text-align: center; font-weight: bold;">${item.qty}</td>
-          <td style="padding: 6px; text-align: right;">₹${item.price.toFixed(2)}</td>
-          <td style="padding: 6px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
+        <tr style="border-bottom: 1px solid #ddd;">
+          <td style="padding: 5px 4px; text-align: center; border-right: 1px solid #eee;">${idx + 1}</td>
+          <td style="padding: 5px 8px; font-weight: bold; border-right: 1px solid #eee;">${item.name}</td>
+          <td style="padding: 5px 6px; text-align: center; font-family: monospace; font-size: 11px; border-right: 1px solid #eee;">${item.barcode}</td>
+          <td style="padding: 5px 6px; text-align: center; font-weight: bold; border-right: 1px solid #eee;">${item.qty}</td>
+          <td style="padding: 5px 8px; text-align: right; border-right: 1px solid #eee;">₹${item.price.toFixed(2)}</td>
+          <td style="padding: 5px 8px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
         </tr>
       `).join('');
 
       const qrBox = document.getElementById('a4-bill-qrcode-box');
       qrBox.innerHTML = '';
-      const netVal = parseFloat(b.total.replace('₹', '')) || 0;
-      const upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_NAME)}&am=${netVal.toFixed(2)}&cu=INR`;
-      new QRCode(qrBox, { text: upiUrl, width: 80, height: 80 });
+      const netVal = parseFloat((b.total || '0').replace('₹', '')) || 0;
+      let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_NAME)}&cu=INR`;
+      if (netVal > 0) {
+        upiUrl += `&am=${netVal.toFixed(2)}&tn=${encodeURIComponent('Bill ' + b.invoice)}`;
+      }
+      try {
+        new QRCode(qrBox, {
+          text: upiUrl,
+          width: 105,
+          height: 105,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        console.warn("QR Render Error:", e);
+      }
 
       document.body.classList.add('printing-bill');
       document.body.classList.remove('printing-stickers');
@@ -1060,7 +1117,7 @@
         window.print();
         document.body.classList.remove('printing-bill');
         document.getElementById('printable-a4-bill').classList.add('hidden');
-      }, 200);
+      }, 450);
     }
 
     // ================= 6. A4 BARCODE STICKER SHEET GENERATOR =================
