@@ -1234,6 +1234,7 @@
         addToCart(matched.barcode);
         searchInput.value = '';
         renderProductCards();
+        searchInput.focus();
       } else {
         alert("Barcode ya Product nahi mila: " + val);
       }
@@ -1333,7 +1334,7 @@
       if (forceResetPaid || !isPaidManuallyEdited || paidInp.value === '' || parseFloat(paidInp.value) > net) {
         paidInp.value = net.toFixed(2);
       }
-      const paid = parseFloat(paidInp.value) || 0;
+      const paid = Math.min(net, parseFloat(paidInp.value) || 0);
       const due = Math.max(0, net - paid);
       document.getElementById('lbl-due-amount').innerText = '₹' + due.toFixed(2);
     }
@@ -1832,13 +1833,14 @@
       billsHistory.forEach(b => {
         const bKey = b.dateKey || getStandardDateKey(b.date || b.timestamp);
         if (bKey === todayKey) {
-          const amt = parseFloat((b.total || '0').replace('₹', '')) || 0;
-          totalSales += amt;
+          const totAmt = parseFloat((b.total || '0').replace('₹', '')) || 0;
+          const receivedAmt = (b.paid !== undefined) ? parseFloat(b.paid) : totAmt;
+          totalSales += totAmt;
           const mode = (b.paymentMode || 'Cash').toUpperCase();
           if (mode.includes('UPI')) {
-            upiSales += amt;
+            upiSales += receivedAmt;
           } else {
-            cashSales += amt;
+            cashSales += receivedAmt;
           }
         }
       });
@@ -2085,7 +2087,8 @@
         if (!manualPhone) return;
         b.phone = manualPhone;
       }
-      const finalPhone = b.phone.replace(/\D/g, '');
+      const rawDigits = b.phone.replace(/\D/g, '');
+      const finalPhone = rawDigits.slice(-10);
       const msg = formatBillMessage(b);
       const url = `https://api.whatsapp.com/send?phone=91${finalPhone}&text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
@@ -2104,7 +2107,8 @@
         if (!manualPhone) return;
         b.phone = manualPhone;
       }
-      const finalPhone = b.phone.replace(/\D/g, '');
+      const rawDigits = b.phone.replace(/\D/g, '');
+      const finalPhone = rawDigits.slice(-10);
       const msg = formatBillMessage(b);
       const url = `sms:+91${finalPhone}?body=${encodeURIComponent(msg)}`;
       window.location.href = url;
