@@ -78,9 +78,9 @@
 
       body.printing-bill #printable-a4-bill #a4-bill-qrcode-box {
         display: block !important;
-        width: 95px !important;
-        height: 95px !important;
-        max-height: 95px !important;
+        width: 100px !important;
+        height: 100px !important;
+        max-height: 100px !important;
         overflow: hidden !important;
         background: #ffffff !important;
         margin: 0 !important;
@@ -97,10 +97,10 @@
       body.printing-bill #printable-a4-bill #a4-bill-qrcode-box img {
         display: block !important;
         visibility: visible !important;
-        width: 95px !important;
-        height: 95px !important;
-        max-width: 95px !important;
-        max-height: 95px !important;
+        width: 100px !important;
+        height: 100px !important;
+        max-width: 100px !important;
+        max-height: 100px !important;
         margin: 0 !important;
         object-fit: contain !important;
       }
@@ -751,7 +751,7 @@
             <tr>
               <td style="vertical-align: middle; width: 100px;">
                 <div style="border: 1px solid #7b132b; padding: 2px; background: #ffffff; display: inline-block; border-radius: 4px;">
-                  <div id="a4-bill-qrcode-box" style="width: 95px; height: 95px; display: flex; align-items: center; justify-content: center; background: #ffffff;"></div>
+                  <div id="a4-bill-qrcode-box" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; background: #ffffff;"></div>
                 </div>
               </td>
               <td style="vertical-align: middle; padding-left: 10px;">
@@ -895,3 +895,1263 @@
     let editingItemIdx = -1;
     let isPaidManuallyEdited = false;
 
+    // Helper: Format Date String to standard YYYY-MM-DD
+    function getStandardDateKey(dateInput) {
+      if (!dateInput) return '';
+      if (typeof dateInput === 'number') {
+        const d = new Date(dateInput);
+        return d.toISOString().split('T')[0];
+      }
+      // Check if format is DD/MM/YYYY
+      if (dateInput.includes('/')) {
+        const parts = dateInput.split(' ')[0].split('/');
+        if (parts.length === 3) {
+          const dd = parts[0].padStart(2, '0');
+          const mm = parts[1].padStart(2, '0');
+          const yyyy = parts[2];
+          return `${yyyy}-${mm}-${dd}`;
+        }
+      }
+      // If already YYYY-MM-DD
+      const d = new Date(dateInput);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString().split('T')[0];
+      }
+      return '';
+    }
+
+    function getTodayStandardDate() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // ================= INIT =================
+    window.addEventListener("DOMContentLoaded", () => {
+      renderProductCards();
+      renderStockTable();
+      renderDaybookTable(); // Only Today's bills
+      renderRecordsArchiveTable(); // Full Archive with Date search
+      renderBarcodeSelectionList();
+
+      if (stockRef) {
+        stockRef.on("value", snap => {
+          const val = snap.val();
+          if (val) {
+            inventory = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
+            localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
+            renderProductCards();
+            renderStockTable();
+            renderBarcodeSelectionList();
+          } else {
+            stockRef.set(defaultCatalog);
+          }
+        });
+      }
+
+      if (billsRef) {
+        billsRef.on("value", snap => {
+          const val = snap.val();
+          if (val) {
+            billsHistory = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
+            billsHistory.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+            localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
+            renderDaybookTable();
+            renderRecordsArchiveTable();
+            updateDashboardMetrics();
+          }
+        });
+      }
+
+      if (expensesRef) {
+        expensesRef.on("value", snap => {
+          const val = snap.val();
+          if (val) {
+            expensesHistory = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
+            expensesHistory.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+            localStorage.setItem("sm_pos_expenses", JSON.stringify(expensesHistory));
+            renderExpensesTable();
+            updateDashboardMetrics();
+          }
+        });
+      }
+
+      renderExpensesTable();
+      updateDashboardMetrics();
+    });
+
+    // ================= TABS =================
+    function switchTab(tabId) {
+      ['dashboard', 'billing', 'records', 'stock', 'barcodes'].forEach(t => {
+        const viewEl = document.getElementById('view-' + t);
+        if (viewEl) viewEl.classList.add('hidden');
+        const btn = document.getElementById('tab-' + t);
+        if (btn) {
+          if (t === 'barcodes') {
+            btn.className = "bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-xs px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 whitespace-nowrap transition";
+          } else {
+            btn.className = "bg-[#630c20] text-pink-100 hover:bg-[#500919] font-bold text-xs px-3.5 py-2 rounded-xl border border-pink-900/40 flex items-center gap-1.5 whitespace-nowrap transition";
+          }
+        }
+      });
+
+      const activeView = document.getElementById('view-' + tabId);
+      if (activeView) activeView.classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-' + tabId);
+      if (activeBtn) {
+        if (tabId === 'barcodes') {
+          activeBtn.className = "bg-amber-400 text-slate-900 font-black text-xs px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 whitespace-nowrap transition";
+        } else {
+          activeBtn.className = "bg-white text-[#7b132b] font-bold text-xs px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 whitespace-nowrap transition";
+        }
+      }
+
+      if (tabId === 'dashboard') {
+        updateDashboardMetrics();
+        renderExpensesTable();
+      } else if (tabId === 'billing') {
+        renderProductCards();
+        renderDaybookTable();
+      } else if (tabId === 'records') {
+        renderRecordsArchiveTable();
+      } else if (tabId === 'stock') {
+        renderStockTable();
+      } else if (tabId === 'barcodes') {
+        renderBarcodeSelectionList();
+      }
+    }
+
+    // ================= 2. SMART BARCODE GENERATION =================
+    function autoGenerateSmartBarcode() {
+      const catVal = document.getElementById('inp-category').value || 'GEN';
+      const catPrefixMap = {
+        'Photography': 'PHT',
+        'Bangles': 'BNG',
+        'Jewelry': 'JWL',
+        'Cosmetics': 'CSM',
+        'Perfumes': 'PRF',
+        'Parlour Services': 'PLR',
+        'Gifts & Photo': 'GFT'
+      };
+      const catCode = catPrefixMap[catVal] || (catVal.substring(0, 3).toUpperCase());
+      const cost = parseInt(document.getElementById('inp-cost').value) || 0;
+      const price = parseInt(document.getElementById('inp-price').value) || 0;
+      const randSeq = Math.floor(100 + Math.random() * 900);
+
+      const smartBarcode = `${catCode}-${cost}-${price}-${randSeq}`;
+      document.getElementById('inp-barcode').value = smartBarcode;
+    }
+
+    // ================= 3. STOCK MASTER =================
+    function toggleStockForm(show, isEdit = false) {
+      const panel = document.getElementById('stock-form-panel');
+      if (show) {
+        panel.classList.remove('hidden');
+        if (!isEdit) {
+          editingItemIdx = -1;
+          document.getElementById('form-header-title').innerText = "New Product Entry";
+          document.getElementById('inp-name').value = "";
+          document.getElementById('inp-cost').value = "50";
+          document.getElementById('inp-price').value = "90";
+          document.getElementById('inp-stock').value = "10";
+          autoGenerateSmartBarcode();
+        }
+      } else {
+        panel.classList.add('hidden');
+      }
+    }
+
+    function saveStockItem() {
+      const name = document.getElementById('inp-name').value.trim();
+      const barcode = document.getElementById('inp-barcode').value.trim();
+      const catSelect = document.getElementById('inp-category');
+      const catText = catSelect.value || 'Cosmetics';
+      const cost = parseFloat(document.getElementById('inp-cost').value) || 0;
+      const price = parseFloat(document.getElementById('inp-price').value) || 0;
+      const stock = parseInt(document.getElementById('inp-stock').value) || 0;
+
+      if (!name) {
+        alert("Kripya Product Name bharein!");
+        return;
+      }
+      if (!barcode) {
+        alert("Kripya Barcode generate karein!");
+        return;
+      }
+
+      const itemData = { barcode, name, category: catText, cost, price, stock };
+
+      if (editingItemIdx >= 0) {
+        inventory[editingItemIdx] = itemData;
+      } else {
+        const existingIdx = inventory.findIndex(i => i.barcode === barcode);
+        if (existingIdx >= 0) {
+          inventory[existingIdx] = itemData;
+        } else {
+          inventory.push(itemData);
+        }
+      }
+
+      localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
+      if (stockRef) stockRef.set(inventory).catch(() => {});
+
+      renderStockTable();
+      renderProductCards();
+      renderBarcodeSelectionList();
+      toggleStockForm(false);
+      alert("Product successfully save ho gaya!");
+    }
+
+    function editStock(idx) {
+      editingItemIdx = idx;
+      const item = inventory[idx];
+      toggleStockForm(true, true);
+      document.getElementById('form-header-title').innerText = "Edit Product: " + item.name;
+      document.getElementById('inp-name').value = item.name;
+      document.getElementById('inp-barcode').value = item.barcode;
+      document.getElementById('inp-cost').value = item.cost;
+      document.getElementById('inp-price').value = item.price;
+      document.getElementById('inp-stock').value = item.stock;
+
+      const catSelect = document.getElementById('inp-category');
+      for (let i = 0; i < catSelect.options.length; i++) {
+        if (catSelect.options[i].value === item.category || catSelect.options[i].text.toLowerCase().includes((item.category || '').toLowerCase())) {
+          catSelect.selectedIndex = i;
+          break;
+        }
+      }
+    }
+
+    function deleteStock(idx) {
+      if (confirm(`Kya aap "${inventory[idx].name}" ko delete karna chahte hain?`)) {
+        inventory.splice(idx, 1);
+        localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
+        if (stockRef) stockRef.set(inventory).catch(() => {});
+        renderStockTable();
+        renderProductCards();
+        renderBarcodeSelectionList();
+      }
+    }
+
+    function renderStockTable() {
+      const tbody = document.getElementById('stock-table-rows');
+      tbody.innerHTML = inventory.map((p, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2.5 px-3 font-mono font-bold text-[#7b132b]">${p.barcode}</td>
+          <td class="py-2.5 px-3 font-bold text-slate-800">${p.name}</td>
+          <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 font-bold text-slate-700">${p.category}</span></td>
+          <td class="py-2.5 px-3 text-right font-medium text-slate-600">₹${p.cost}</td>
+          <td class="py-2.5 px-3 text-right font-bold text-[#7b132b]">₹${p.price}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${p.stock < 10 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+              ${p.stock}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-center">
+            <button onclick="editStock(${idx})" class="text-indigo-600 font-bold hover:underline mr-2">Edit</button>
+            <button onclick="deleteStock(${idx})" class="text-red-500 font-bold hover:underline">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ================= 4. BILLING & CART =================
+    function filterCategory(cat) {
+      selectedCat = cat;
+      const cats = ['All', 'Photography', 'Bangles', 'Jewelry', 'Cosmetics', 'Perfumes', 'Parlour Services', 'Gifts & Photo'];
+      cats.forEach(c => {
+        const btn = document.getElementById('cat-' + c);
+        if (btn) {
+          if (c === cat) {
+            btn.className = "px-3.5 py-1.5 rounded-full bg-[#7b132b] text-white shadow whitespace-nowrap";
+          } else {
+            btn.className = "px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap";
+          }
+        }
+      });
+      renderProductCards();
+    }
+
+    function isCategoryMatch(itemCategory, selectedCategory) {
+      if (!selectedCategory || selectedCategory === "All") return true;
+      if (!itemCategory) return false;
+      const ic = itemCategory.toLowerCase().trim();
+      const sc = selectedCategory.toLowerCase().trim();
+      if (ic === sc) return true;
+      if (ic.includes(sc) || sc.includes(ic)) return true;
+      if (sc.includes('photo') && (ic.includes('photo') || ic.includes('pht') || ic.includes('xerox'))) return true;
+      if (sc.includes('parlour') && ic.includes('parlour')) return true;
+      if (sc.includes('gift') && ic.includes('gift')) return true;
+      if (sc.includes('bangle') && (ic.includes('bangle') || ic.includes('lahthi') || ic.includes('chudi'))) return true;
+      if (sc.includes('jewelry') && (ic.includes('jewel') || ic.includes('gehne'))) return true;
+      return false;
+    }
+
+    function renderProductCards() {
+      const q = (document.getElementById('billing-search').value || '').toLowerCase().trim();
+      const grid = document.getElementById('billing-product-grid');
+
+      const filtered = inventory.filter(item => {
+        const matchCat = isCategoryMatch(item.category, selectedCat);
+        const matchSearch = item.name.toLowerCase().includes(q) || item.barcode.toLowerCase().includes(q);
+        return matchCat && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="col-span-4 text-center py-10 text-slate-400 text-xs">No items found matching your filter.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => `
+        <div onclick="addToCart('${item.barcode}')" class="bg-white p-3 rounded-2xl border border-slate-200 hover:border-[#7b132b] hover:shadow-md transition cursor-pointer flex flex-col justify-between h-[105px]">
+          <div>
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">${item.category}</span>
+            <h4 class="font-bold text-slate-800 text-xs truncate leading-tight mt-0.5">${item.name}</h4>
+          </div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-[#7b132b] font-black text-sm">₹${item.price}</span>
+            <span class="text-[10px] text-slate-400 font-medium">Stock: ${item.stock}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function handleBarcodeEnter(e) {
+      if (e.key === 'Enter') {
+        handleQuickBarcodeAdd();
+      }
+    }
+
+    function handleQuickBarcodeAdd() {
+      const searchInput = document.getElementById('billing-search');
+      const val = searchInput.value.trim();
+      if (!val) return;
+
+      const matched = inventory.find(i => i.barcode.toLowerCase() === val.toLowerCase() || i.name.toLowerCase() === val.toLowerCase());
+      if (matched) {
+        addToCart(matched.barcode);
+        searchInput.value = '';
+        renderProductCards();
+      } else {
+        alert("Barcode ya Product nahi mila: " + val);
+      }
+    }
+
+    function addToCart(barcode) {
+      const item = inventory.find(i => i.barcode === barcode);
+      if (!item) return;
+
+      const existing = cart.find(c => c.barcode === barcode);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ ...item, qty: 1 });
+      }
+      renderCart();
+    }
+
+    function updateCartPrice(idx, newPrice) {
+      const p = parseFloat(newPrice);
+      if (!isNaN(p) && p >= 0) {
+        cart[idx].price = p;
+        calculateTotals();
+        renderCart();
+      }
+    }
+
+    function updateCartQty(idx, delta) {
+      cart[idx].qty += delta;
+      if (cart[idx].qty <= 0) cart.splice(idx, 1);
+      renderCart();
+    }
+
+    function removeCartItem(idx) {
+      cart.splice(idx, 1);
+      renderCart();
+    }
+
+    function clearCart() {
+      if (cart.length > 0 && confirm("Clear current invoice?")) {
+        cart = [];
+        isPaidManuallyEdited = false;
+        document.getElementById('bill-discount').value = '0';
+        document.getElementById('bill-paid').value = '';
+        renderCart();
+      }
+    }
+
+    function renderCart() {
+      const box = document.getElementById('cart-items-box');
+      const countLabel = document.getElementById('cart-item-count');
+      countLabel.innerText = cart.length + " items selected";
+
+      if (cart.length === 0) {
+        box.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs"><i class="fa-solid fa-cart-shopping text-xl mb-1 text-slate-300"></i><p>Cart is empty. Select products.</p></div>`;
+      } else {
+        box.innerHTML = cart.map((i, idx) => `
+          <div class="bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs gap-1">
+            <div class="truncate flex-1 mr-1">
+              <div class="font-bold text-slate-800 truncate" title="${i.name}">${i.name}</div>
+              <div class="flex items-center gap-1 mt-0.5">
+                <span class="text-[10px] text-slate-500">Rate ₹:</span>
+                <input type="number" min="0" step="any" value="${i.price}" onchange="updateCartPrice(${idx}, this.value)" class="w-16 border rounded px-1 py-0.5 text-xs font-bold text-[#7b132b] bg-amber-50/60 focus:bg-white outline-none" title="Rate change karein">
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <div class="flex items-center border rounded-lg bg-slate-50 overflow-hidden font-bold">
+                <button onclick="updateCartQty(${idx}, -1)" class="px-2 py-0.5 hover:bg-slate-200 text-slate-600">-</button>
+                <span class="px-2 text-xs">${i.qty}</span>
+                <button onclick="updateCartQty(${idx}, 1)" class="px-2 py-0.5 hover:bg-slate-200 text-slate-600">+</button>
+              </div>
+              <span class="font-bold text-slate-800 w-16 text-right">₹${(i.price * i.qty).toFixed(2)}</span>
+              <button onclick="removeCartItem(${idx})" class="text-slate-300 hover:text-red-500 ml-1">✕</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      calculateTotals();
+    }
+
+    function onPaidInputChange() {
+      isPaidManuallyEdited = true;
+      calculateTotals();
+    }
+
+    function calculateTotals(forceResetPaid = false) {
+      const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+      const discount = parseFloat(document.getElementById('bill-discount').value) || 0;
+      const net = Math.max(0, subtotal - discount);
+
+      document.getElementById('lbl-subtotal').innerText = '₹' + subtotal.toFixed(2);
+      document.getElementById('lbl-net-total').innerText = '₹' + net.toFixed(2);
+
+      const paidInp = document.getElementById('bill-paid');
+      // Jab tak user khud hath se advance amount na daale, paid amount hamesha pure bill (net total) ke barabar auto-update hota rahega!
+      if (forceResetPaid || !isPaidManuallyEdited || paidInp.value === '' || parseFloat(paidInp.value) > net) {
+        paidInp.value = net.toFixed(2);
+      }
+      const paid = parseFloat(paidInp.value) || 0;
+      const due = Math.max(0, net - paid);
+      document.getElementById('lbl-due-amount').innerText = '₹' + due.toFixed(2);
+    }
+
+    function setPaymentMode(mode) {
+      selectedPayMode = mode;
+      ['Cash', 'UPI'].forEach(m => {
+        const btn = document.getElementById('pm-' + m);
+        if (m === mode) {
+          btn.className = "py-2 rounded-xl border-2 border-[#7b132b] bg-pink-50 text-[#7b132b] font-bold text-xs flex items-center justify-center gap-1 shadow-xs";
+        } else {
+          btn.className = "py-2 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs flex items-center justify-center gap-1 hover:bg-slate-50";
+        }
+      });
+    }
+
+    // ================= 5. A4 INVOICE PRINT (NO BLANK PAGES, COMPACT 8-INCH) =================
+    function generateAndPrintA4Bill() {
+      if (cart.length === 0) {
+        alert("Pehle cart me items add karein!");
+        return;
+      }
+
+      const invNo = "SM-" + Math.floor(100000 + Math.random() * 900000);
+      const custName = document.getElementById('bill-cust-name').value.trim() || 'Walk-in Customer';
+      const custPhone = document.getElementById('bill-cust-phone').value.trim() || 'N/A';
+      
+      const subtotalNum = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+      const discNum = parseFloat(document.getElementById('bill-discount').value) || 0;
+      const netAmountNum = Math.max(0, subtotalNum - discNum);
+
+      let paidInpVal = document.getElementById('bill-paid').value;
+      let paidNum = (paidInpVal !== '' && !isNaN(parseFloat(paidInpVal))) ? parseFloat(paidInpVal) : netAmountNum;
+      paidNum = Math.min(paidNum, netAmountNum);
+      const dueNum = Math.max(0, netAmountNum - paidNum);
+
+      const subtotalStr = '₹' + subtotalNum.toFixed(2);
+      const discountStr = '- ₹' + discNum.toFixed(2);
+      const netTotalStr = '₹' + netAmountNum.toFixed(2);
+      const paidStr = '₹' + paidNum.toFixed(2);
+      const dueStr = '₹' + dueNum.toFixed(2);
+
+      const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = new Date().toLocaleDateString('en-IN');
+      const standardDateStr = getTodayStandardDate();
+
+      let modeStr = selectedPayMode;
+      if (dueNum > 0) {
+        modeStr += ` (DUE: ${dueStr})`;
+      }
+
+      document.getElementById('a4-inv-no').innerText = "Inv: " + invNo;
+      document.getElementById('a4-inv-date').innerText = "Date: " + dateStr + " " + timeStr;
+      document.getElementById('a4-cust-name').innerText = custName;
+      document.getElementById('a4-cust-phone').innerText = custPhone;
+      document.getElementById('a4-cust-paymode').innerText = modeStr;
+
+      document.getElementById('a4-subtotal').innerText = subtotalStr;
+      document.getElementById('a4-discount').innerText = discountStr;
+      document.getElementById('a4-net-total').innerText = netTotalStr;
+      document.getElementById('a4-paid-amount').innerText = paidStr;
+      document.getElementById('a4-due-amount').innerText = dueStr;
+
+      const dueRow = document.getElementById('a4-due-row');
+      if (dueRow) {
+        dueRow.style.display = dueNum > 0 ? 'table-row' : 'none';
+      }
+
+      const itemsBody = document.getElementById('a4-bill-items-rows');
+      itemsBody.innerHTML = cart.map((item, idx) => `
+        <tr style="border-bottom: 1px solid #000;">
+          <td style="padding: 4px 3px; text-align: center; border-right: 1px solid #000;">${idx + 1}</td>
+          <td style="padding: 4px 6px; font-weight: bold; border-right: 1px solid #000;">${item.name}</td>
+          <td style="padding: 4px 4px; text-align: center; font-family: monospace; font-size: 10px; border-right: 1px solid #000;">${item.barcode}</td>
+          <td style="padding: 4px 4px; text-align: center; font-weight: bold; border-right: 1px solid #000;">${item.qty}</td>
+          <td style="padding: 4px 6px; text-align: right; border-right: 1px solid #000;">₹${item.price.toFixed(2)}</td>
+          <td style="padding: 4px 6px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      // Generate Clean Dynamic QR with Exact Net Due Amount Auto-Locked (or Net Total if no due)
+      const qrBox = document.getElementById('a4-bill-qrcode-box');
+      if (qrBox) {
+        qrBox.innerHTML = '';
+        // Agar baaki due bacha hai to QR scan me Net Due aayega, nahi to paid/net total
+        const payQrAmt = (dueNum > 0) ? dueNum : ((paidNum > 0) ? paidNum : netAmountNum);
+        const billNote = (dueNum > 0) ? ('Due ' + invNo) : ('Bill ' + invNo);
+        let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_PAYEE_NAME)}&cu=INR`;
+        if (payQrAmt > 0) {
+          upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent(billNote)}`;
+        }
+
+        const qrNoteEl = document.getElementById('a4-qr-locked-note');
+        if (qrNoteEl) {
+          if (dueNum > 0) {
+            qrNoteEl.innerText = `Net Due ₹${dueNum.toFixed(2)} Locked | Scan & Pay`;
+            qrNoteEl.style.color = '#be123c';
+          } else {
+            qrNoteEl.innerText = `Full Paid ₹${netAmountNum.toFixed(2)} | Scan & Pay`;
+            qrNoteEl.style.color = '#047857';
+          }
+        }
+
+        try {
+          new QRCode(qrBox, {
+            text: upiUrl,
+            width: 100,
+            height: 100,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+          setTimeout(() => {
+            const canvases = qrBox.querySelectorAll('canvas');
+            canvases.forEach(c => { c.style.display = 'none'; c.remove(); });
+          }, 30);
+        } catch (e) {
+          console.warn("QR Render Error:", e);
+        }
+      }
+
+      // Deduct Stock
+      cart.forEach(c => {
+        const item = inventory.find(i => i.barcode === c.barcode);
+        if (item && item.stock !== undefined) {
+          item.stock = Math.max(0, item.stock - c.qty);
+        }
+      });
+      localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
+      if (stockRef) stockRef.set(inventory).catch(() => {});
+
+      // Record Bill (saving paid and due permanently)
+      const billRecord = {
+        invoice: invNo,
+        date: dateStr + " " + timeStr,
+        dateKey: standardDateStr,
+        timestamp: Date.now(),
+        customer: custName,
+        phone: custPhone,
+        itemsCount: cart.reduce((acc, i) => acc + i.qty, 0),
+        paymentMode: selectedPayMode,
+        subtotal: subtotalStr,
+        discount: discNum,
+        total: netTotalStr,
+        paid: paidNum,
+        due: dueNum,
+        items: [...cart]
+      };
+      billsHistory.unshift(billRecord);
+      localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
+      if (billsRef) billsRef.push(billRecord).catch(() => {});
+
+      // Snapshot for messaging triggers
+      lastGeneratedBillSnapshot = { ...billRecord };
+
+      // Activate Bill Print
+      document.body.classList.add('printing-bill');
+      document.body.classList.remove('printing-stickers');
+      document.getElementById('printable-a4-bill').classList.remove('hidden');
+      document.getElementById('printable-barcode-sheet').classList.add('hidden');
+
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove('printing-bill');
+        document.getElementById('printable-a4-bill').classList.add('hidden');
+        
+        // Reset form
+        cart = [];
+        isPaidManuallyEdited = false;
+        document.getElementById('bill-cust-name').value = '';
+        document.getElementById('bill-cust-phone').value = '';
+        document.getElementById('bill-discount').value = '0';
+        document.getElementById('bill-paid').value = '';
+        renderCart();
+        renderProductCards();
+        renderStockTable();
+        renderDaybookTable();
+        renderRecordsArchiveTable();
+        updateDashboardMetrics();
+      }, 450);
+    }
+
+    // ================= TODAY'S DAYBOOK (STRICTLY TODAY ONLY) =================
+    function renderDaybookTable() {
+      const tbody = document.getElementById('daybook-rows');
+      const counterEl = document.getElementById('today-bill-counter');
+      const todayKey = getTodayStandardDate();
+
+      const todayBills = billsHistory.filter(b => {
+        const bKey = b.dateKey || getStandardDateKey(b.date || b.timestamp);
+        return bKey === todayKey;
+      });
+
+      if (counterEl) counterEl.innerText = `${todayBills.length} Bills Today`;
+
+      if (todayBills.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400">Aaj abhi tak koi bill nahi kata hai.</td></tr>`;
+      } else {
+        tbody.innerHTML = todayBills.map(b => {
+          const totVal = parseFloat((b.total || '0').replace('₹', '')) || 0;
+          const paidVal = (b.paid !== undefined) ? parseFloat(b.paid) : totVal;
+          const dueVal = (b.due !== undefined) ? parseFloat(b.due) : Math.max(0, totVal - paidVal);
+          return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2 px-2.5 font-mono font-bold text-[#7b132b]">${b.invoice}</td>
+            <td class="py-2 px-2.5 text-slate-500">${b.date}</td>
+            <td class="py-2 px-2.5 font-bold text-slate-800">${b.customer}</td>
+            <td class="py-2 px-2.5 text-slate-600">${b.itemsCount} items</td>
+            <td class="py-2 px-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.paymentMode === 'UPI' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'}">${b.paymentMode}</span></td>
+            <td class="py-2 px-2.5 text-right font-bold text-slate-900">${b.total}</td>
+            <td class="py-2 px-2.5 text-right font-bold text-emerald-700">₹${paidVal.toFixed(2)}</td>
+            <td class="py-2 px-2.5 text-right font-bold ${dueVal > 0 ? 'text-rose-600' : 'text-slate-400'}">₹${dueVal.toFixed(2)}</td>
+            <td class="py-2 px-2.5 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button onclick="reprintSavedBill('${b.invoice}')" class="text-[#7b132b] hover:underline font-bold text-xs" title="Print Invoice"><i class="fa-solid fa-print"></i></button>
+                <button onclick="sendDirectWhatsApp('${b.invoice}')" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs" title="WhatsApp Invoice"><i class="fa-brands fa-whatsapp"></i></button>
+                <button onclick="sendDirectSMS('${b.invoice}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs" title="SMS Invoice"><i class="fa-solid fa-comment-sms"></i></button>
+                <button onclick="toggleBillPaymentMode('${b.invoice}')" class="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.5 rounded text-[10px]" title="Switch Mode">⇄</button>
+                ${dueVal > 0 ? `<button onclick="clearDueAmount('${b.invoice}')" class="bg-rose-100 text-rose-800 border border-rose-300 font-bold px-1.5 py-0.5 rounded text-[10px]" title="Clear Due">Clear</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+        }).join('');
+      }
+    }
+
+    // ================= RECORDS ARCHIVE (PREVIOUS BILLS BY DATE/SEARCH) =================
+    function renderRecordsArchiveTable() {
+      const tbody = document.getElementById('archive-table-rows');
+      if (!tbody) return;
+
+      const datePickerVal = document.getElementById('archive-date-picker')?.value || '';
+      const searchQuery = (document.getElementById('archive-search-input')?.value || '').toLowerCase().trim();
+      const modeFilter = document.getElementById('archive-mode-filter')?.value || 'All';
+
+      const filtered = billsHistory.filter(b => {
+        // Date match
+        if (datePickerVal) {
+          const bKey = b.dateKey || getStandardDateKey(b.date || b.timestamp);
+          if (bKey !== datePickerVal) return false;
+        }
+        // Mode match
+        if (modeFilter !== 'All' && b.paymentMode !== modeFilter) {
+          return false;
+        }
+        // Text Search match
+        if (searchQuery) {
+          const matchInv = (b.invoice || '').toLowerCase().includes(searchQuery);
+          const matchCust = (b.customer || '').toLowerCase().includes(searchQuery);
+          const matchPhone = (b.phone || '').toLowerCase().includes(searchQuery);
+          if (!matchInv && !matchCust && !matchPhone) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400">Chune gaye date ya filter me koi bill nahi mila.</td></tr>`;
+      } else {
+        tbody.innerHTML = filtered.map(b => {
+          const totVal = parseFloat((b.total || '0').replace('₹', '')) || 0;
+          const paidVal = (b.paid !== undefined) ? parseFloat(b.paid) : totVal;
+          const dueVal = (b.due !== undefined) ? parseFloat(b.due) : Math.max(0, totVal - paidVal);
+          return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2 px-2.5 font-mono font-bold text-[#7b132b]">${b.invoice}</td>
+            <td class="py-2 px-2.5 text-slate-500">${b.date}</td>
+            <td class="py-2 px-2.5 font-bold text-slate-800">${b.customer} <span class="text-[10px] text-slate-400 font-normal">(${b.phone || 'N/A'})</span></td>
+            <td class="py-2 px-2.5 text-slate-600">${b.itemsCount} items</td>
+            <td class="py-2 px-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.paymentMode === 'UPI' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'}">${b.paymentMode}</span></td>
+            <td class="py-2 px-2.5 text-right font-bold text-slate-900">${b.total}</td>
+            <td class="py-2 px-2.5 text-right font-bold text-emerald-700">₹${paidVal.toFixed(2)}</td>
+            <td class="py-2 px-2.5 text-right font-bold ${dueVal > 0 ? 'text-rose-600' : 'text-slate-400'}">₹${dueVal.toFixed(2)}</td>
+            <td class="py-2 px-2.5 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button onclick="reprintSavedBill('${b.invoice}')" class="text-[#7b132b] hover:underline font-bold text-xs" title="Print Invoice"><i class="fa-solid fa-print"></i></button>
+                <button onclick="sendDirectWhatsApp('${b.invoice}')" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
+                <button onclick="sendDirectSMS('${b.invoice}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs" title="SMS"><i class="fa-solid fa-comment-sms"></i></button>
+                <button onclick="toggleBillPaymentMode('${b.invoice}')" class="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.5 rounded text-[10px]" title="Switch Mode">⇄</button>
+                ${dueVal > 0 ? `<button onclick="clearDueAmount('${b.invoice}')" class="bg-rose-100 text-rose-800 border border-rose-300 font-bold px-1.5 py-0.5 rounded text-[10px]" title="Clear Due">Clear</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+        }).join('');
+      }
+    }
+
+    function filterRecordsArchive() {
+      renderRecordsArchiveTable();
+    }
+
+    function resetArchiveFilters() {
+      if (document.getElementById('archive-date-picker')) document.getElementById('archive-date-picker').value = '';
+      if (document.getElementById('archive-search-input')) document.getElementById('archive-search-input').value = '';
+      if (document.getElementById('archive-mode-filter')) document.getElementById('archive-mode-filter').value = 'All';
+      renderRecordsArchiveTable();
+    }
+
+    // ================= REPRINT BILL =================
+    function reprintSavedBill(invNo) {
+      const b = billsHistory.find(i => i.invoice === invNo);
+      if (!b) return;
+
+      const discNum = parseFloat(b.discount || 0);
+      const totNum = parseFloat((b.total || '0').replace('₹', '')) || 0;
+      let subtotalStr = b.subtotal;
+      if (!subtotalStr) {
+        subtotalStr = '₹' + (totNum + discNum).toFixed(2);
+      }
+
+      const paidNum = (b.paid !== undefined) ? parseFloat(b.paid) : totNum;
+      const dueNum = (b.due !== undefined) ? parseFloat(b.due) : Math.max(0, totNum - paidNum);
+
+      let modeStr = b.paymentMode || 'Cash';
+      if (dueNum > 0) {
+        modeStr += ` (DUE: ₹${dueNum.toFixed(2)})`;
+      }
+
+      document.getElementById('a4-inv-no').innerText = "Inv: " + b.invoice;
+      document.getElementById('a4-inv-date').innerText = "Date: " + b.date;
+      document.getElementById('a4-cust-name').innerText = b.customer;
+      document.getElementById('a4-cust-phone').innerText = b.phone;
+      document.getElementById('a4-cust-paymode').innerText = modeStr;
+      document.getElementById('a4-subtotal').innerText = subtotalStr;
+      document.getElementById('a4-discount').innerText = '- ₹' + discNum.toFixed(2);
+      document.getElementById('a4-net-total').innerText = b.total;
+      document.getElementById('a4-paid-amount').innerText = '₹' + paidNum.toFixed(2);
+      document.getElementById('a4-due-amount').innerText = '₹' + dueNum.toFixed(2);
+
+      const dueRow = document.getElementById('a4-due-row');
+      if (dueRow) {
+        dueRow.style.display = dueNum > 0 ? 'table-row' : 'none';
+      }
+
+      const itemsBody = document.getElementById('a4-bill-items-rows');
+      itemsBody.innerHTML = (b.items || []).map((item, idx) => `
+        <tr style="border-bottom: 1px solid #000;">
+          <td style="padding: 4px 3px; text-align: center; border-right: 1px solid #000;">${idx + 1}</td>
+          <td style="padding: 4px 6px; font-weight: bold; border-right: 1px solid #000;">${item.name}</td>
+          <td style="padding: 4px 4px; text-align: center; font-family: monospace; font-size: 10px; border-right: 1px solid #000;">${item.barcode}</td>
+          <td style="padding: 4px 4px; text-align: center; font-weight: bold; border-right: 1px solid #000;">${item.qty}</td>
+          <td style="padding: 4px 6px; text-align: right; border-right: 1px solid #000;">₹${item.price.toFixed(2)}</td>
+          <td style="padding: 4px 6px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      // Generate Dynamic QR for reprint with Exact Net Due Amount Auto-Locked
+      const qrBox = document.getElementById('a4-bill-qrcode-box');
+      if (qrBox) {
+        qrBox.innerHTML = '';
+        // Agar baaki due bacha hai to QR scan me Net Due aayega, nahi to paid/total
+        const payQrAmt = (dueNum > 0) ? dueNum : ((paidNum > 0) ? paidNum : totNum);
+        const billNote = (dueNum > 0) ? ('Due ' + b.invoice) : ('Bill ' + b.invoice);
+        let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_PAYEE_NAME)}&cu=INR`;
+        if (payQrAmt > 0) {
+          upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent(billNote)}`;
+        }
+
+        const qrNoteEl = document.getElementById('a4-qr-locked-note');
+        if (qrNoteEl) {
+          if (dueNum > 0) {
+            qrNoteEl.innerText = `Net Due ₹${dueNum.toFixed(2)} Locked | Scan & Pay`;
+            qrNoteEl.style.color = '#be123c';
+          } else {
+            qrNoteEl.innerText = `Full Paid ₹${totNum.toFixed(2)} | Scan & Pay`;
+            qrNoteEl.style.color = '#047857';
+          }
+        }
+
+        try {
+          new QRCode(qrBox, {
+            text: upiUrl,
+            width: 100,
+            height: 100,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+          setTimeout(() => {
+            const canvases = qrBox.querySelectorAll('canvas');
+            canvases.forEach(c => { c.style.display = 'none'; c.remove(); });
+          }, 30);
+        } catch (e) {
+          console.warn("QR Render Error:", e);
+        }
+      }
+
+      document.body.classList.add('printing-bill');
+      document.body.classList.remove('printing-stickers');
+      document.getElementById('printable-a4-bill').classList.remove('hidden');
+      document.getElementById('printable-barcode-sheet').classList.add('hidden');
+      
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove('printing-bill');
+        document.getElementById('printable-a4-bill').classList.add('hidden');
+      }, 450);
+    }
+
+    // ================= 6. BARCODE STICKER SHEET GENERATOR =================
+    function renderBarcodeSelectionList() {
+      const tbody = document.getElementById('barcode-selection-rows');
+      tbody.innerHTML = inventory.map((item, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2 px-3 text-center">
+            <input type="checkbox" id="chk-bc-${idx}" class="bc-print-chk rounded text-[#7b132b] w-4 h-4">
+          </td>
+          <td class="py-2 px-3 font-mono font-bold text-slate-800">${item.barcode}</td>
+          <td class="py-2 px-3 font-bold">${item.name}</td>
+          <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 font-bold">${item.category}</span></td>
+          <td class="py-2 px-3 text-right font-bold text-[#7b132b]">₹${item.price}</td>
+          <td class="py-2 px-3 text-center">
+            <input type="number" id="qty-bc-${idx}" value="${item.stock || 4}" min="1" max="100" class="w-20 border rounded-lg p-1 text-center font-bold text-xs bg-slate-50">
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function selectAllStockForBarcodePrint() {
+      const chks = document.querySelectorAll('.bc-print-chk');
+      chks.forEach(c => c.checked = true);
+    }
+
+    function deselectAllStockForBarcodePrint() {
+      const chks = document.querySelectorAll('.bc-print-chk');
+      chks.forEach(c => c.checked = false);
+    }
+
+    function printA4BarcodeSheet() {
+      const container = document.getElementById('a4-barcode-grid-container');
+      container.innerHTML = '';
+
+      let totalLabels = 0;
+
+      inventory.forEach((item, idx) => {
+        const chk = document.getElementById(`chk-bc-${idx}`);
+        const qtyInp = document.getElementById(`qty-bc-${idx}`);
+        if (chk && chk.checked) {
+          const qty = parseInt(qtyInp.value) || 1;
+          for (let q = 0; q < qty; q++) {
+            totalLabels++;
+            const labelDiv = document.createElement('div');
+            labelDiv.style.border = '1px dashed #666';
+            labelDiv.style.padding = '2.5mm 1.5mm';
+            labelDiv.style.borderRadius = '3px';
+            labelDiv.style.textAlign = 'center';
+            labelDiv.style.background = '#fff';
+            labelDiv.style.breakInside = 'avoid';
+
+            labelDiv.innerHTML = `
+              <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; color: #7b132b; letter-spacing: 0.5px;">Studio Manorama</div>
+              <div style="font-size: 8.5px; font-weight: bold; color: #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 125px; margin: 1px auto;">${item.name}</div>
+              <svg id="bc-svg-${idx}-${q}" style="max-width: 100%; height: 30px; margin: 1px auto;"></svg>
+              <div style="display: flex; justify-content: space-between; font-size: 8.5px; font-weight: bold; padding: 0 3px; margin-top: 1px;">
+                <span>${item.category}</span>
+                <span style="font-size: 9px; color: #000;">MRP: ₹${item.price}</span>
+              </div>
+            `;
+            container.appendChild(labelDiv);
+
+            setTimeout(() => {
+              try {
+                JsBarcode(`#bc-svg-${idx}-${q}`, item.barcode, {
+                  format: "CODE128",
+                  width: 1.1,
+                  height: 25,
+                  fontSize: 8.5,
+                  displayValue: true,
+                  margin: 0
+                });
+              } catch(e) {
+                console.warn("JsBarcode Render:", e);
+              }
+            }, 10);
+          }
+        }
+      });
+
+      if (totalLabels === 0) {
+        alert("Kripya print karne ke liye kam se kam ek product select karein!");
+        return;
+      }
+
+      document.body.classList.add('printing-stickers');
+      document.body.classList.remove('printing-bill');
+      document.getElementById('printable-a4-bill').classList.add('hidden');
+      document.getElementById('printable-barcode-sheet').classList.remove('hidden');
+
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove('printing-stickers');
+        document.getElementById('printable-barcode-sheet').classList.add('hidden');
+      }, 500);
+    }
+  
+    // ================= 7. FINANCIAL METRICS & EXPENSES =================
+    function updateDashboardMetrics() {
+      let totalSales = 0;
+      let cashSales = 0;
+      let upiSales = 0;
+      let totalExpense = 0;
+      const todayKey = getTodayStandardDate();
+
+      billsHistory.forEach(b => {
+        const bKey = b.dateKey || getStandardDateKey(b.date || b.timestamp);
+        if (bKey === todayKey) {
+          const amt = parseFloat((b.total || '0').replace('₹', '')) || 0;
+          totalSales += amt;
+          const mode = (b.paymentMode || 'Cash').toUpperCase();
+          if (mode.includes('UPI')) {
+            upiSales += amt;
+          } else {
+            cashSales += amt;
+          }
+        }
+      });
+
+      expensesHistory.forEach(e => {
+        const eKey = e.dateKey || getStandardDateKey(e.date || e.timestamp);
+        if (eKey === todayKey) {
+          totalExpense += parseFloat(e.amount || 0);
+        }
+      });
+
+      const netBalance = totalSales - totalExpense;
+
+      const elTotal = document.getElementById('dash-total-sales');
+      const elCash = document.getElementById('dash-cash-sales');
+      const elUpi = document.getElementById('dash-upi-sales');
+      const elExp = document.getElementById('dash-total-expense');
+      const elNet = document.getElementById('dash-net-balance');
+      const elBills = document.getElementById('dash-total-bills');
+      const elFooterExp = document.getElementById('lbl-dash-footer-expense');
+
+      const todayBillsCount = billsHistory.filter(b => (b.dateKey || getStandardDateKey(b.date || b.timestamp)) === todayKey).length;
+
+      if (elTotal) elTotal.innerText = '₹' + totalSales.toFixed(2);
+      if (elCash) elCash.innerText = '₹' + cashSales.toFixed(2);
+      if (elUpi) elUpi.innerText = '₹' + upiSales.toFixed(2);
+      if (elExp) elExp.innerText = '₹' + totalExpense.toFixed(2);
+      if (elNet) elNet.innerText = '₹' + netBalance.toFixed(2);
+      if (elBills) elBills.innerText = todayBillsCount;
+      if (elFooterExp) elFooterExp.innerText = '₹' + totalExpense.toFixed(2);
+    }
+
+    function toggleBillPaymentMode(invNo) {
+      const bill = billsHistory.find(b => b.invoice === invNo);
+      if (!bill) return;
+
+      const currentMode = bill.paymentMode || 'Cash';
+      const newMode = (currentMode.toUpperCase() === 'UPI') ? 'Cash' : 'UPI';
+
+      const confirmed = confirm(`Invoice ${invNo}:\nPayment mode abhi "${currentMode}" hai.\nKya aap ise badal kar "${newMode}" karna chahte hain?`);
+      if (!confirmed) return;
+
+      bill.paymentMode = newMode;
+      localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
+
+      if (billsRef) {
+        billsRef.set(billsHistory).catch(err => {
+          console.warn("Firebase Bill Mode Update Warning:", err);
+        });
+      }
+
+      renderDaybookTable();
+      renderRecordsArchiveTable();
+      updateDashboardMetrics();
+      alert(`Invoice ${invNo} ka payment mode safaltapoorvak "${newMode}" me update ho gaya!`);
+    }
+
+    function setExpenseSource(src) {
+      selectedExpenseSource = src;
+      const btnCash = document.getElementById('exp-src-Cash');
+      const btnUpi = document.getElementById('exp-src-UPI');
+      if (src === 'Cash') {
+        btnCash.className = "py-1.5 border-2 border-emerald-600 bg-emerald-50 text-emerald-800 font-bold rounded-xl text-center";
+        btnUpi.className = "py-1.5 border border-slate-200 bg-white text-slate-700 font-bold rounded-xl text-center";
+      } else {
+        btnCash.className = "py-1.5 border border-slate-200 bg-white text-slate-700 font-bold rounded-xl text-center";
+        btnUpi.className = "py-1.5 border-2 border-purple-600 bg-purple-50 text-purple-800 font-bold rounded-xl text-center";
+      }
+    }
+
+    function saveNewExpense() {
+      const title = document.getElementById('exp-title').value.trim();
+      const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
+      const category = document.getElementById('exp-cat').value;
+      const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = new Date().toLocaleDateString('en-IN');
+      const standardDateStr = getTodayStandardDate();
+
+      if (!title) {
+        alert("Kripya kharche ka vivran (title) bharein!");
+        return;
+      }
+      if (amount <= 0) {
+        alert("Kripya sahi expense amount (₹) bharein!");
+        return;
+      }
+
+      const expenseItem = {
+        id: "EXP-" + Date.now().toString().slice(-6),
+        title: title,
+        category: category,
+        amount: amount,
+        source: selectedExpenseSource,
+        time: timeStr,
+        date: dateStr,
+        dateKey: standardDateStr,
+        timestamp: Date.now()
+      };
+
+      expensesHistory.unshift(expenseItem);
+      localStorage.setItem("sm_pos_expenses", JSON.stringify(expensesHistory));
+
+      if (expensesRef) {
+        expensesRef.set(expensesHistory).catch(err => {
+          console.warn("Firebase Expense Save Warning:", err);
+        });
+      }
+
+      document.getElementById('exp-title').value = '';
+      document.getElementById('exp-amount').value = '';
+
+      renderExpensesTable();
+      updateDashboardMetrics();
+      alert("Kharcha (₹" + amount + ") safaltapoorvak jod diya gaya!");
+    }
+
+    function deleteExpense(idx) {
+      if (idx < 0 || idx >= expensesHistory.length) return;
+      if (confirm(`Kya aap "${expensesHistory[idx].title}" (₹${expensesHistory[idx].amount}) kharch record ko delete karna chahte hain?`)) {
+        expensesHistory.splice(idx, 1);
+        localStorage.setItem("sm_pos_expenses", JSON.stringify(expensesHistory));
+        if (expensesRef) {
+          expensesRef.set(expensesHistory).catch(() => {});
+        }
+        renderExpensesTable();
+        updateDashboardMetrics();
+      }
+    }
+
+    function renderExpensesTable() {
+      const tbody = document.getElementById('expense-rows-table');
+      const countLabel = document.getElementById('exp-count-label');
+      const todayKey = getTodayStandardDate();
+      
+      const todayExpenses = expensesHistory.filter(e => {
+        const eKey = e.dateKey || getStandardDateKey(e.date || e.timestamp);
+        return eKey === todayKey;
+      });
+
+      if (countLabel) countLabel.innerText = todayExpenses.length + " expenses recorded today";
+      if (!tbody) return;
+
+      if (todayExpenses.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">Aaj koi kharcha darj nahi kiya gaya hai.</td></tr>`;
+      } else {
+        tbody.innerHTML = todayExpenses.map((e, idx) => `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2.5 px-2.5 text-slate-400">${e.time || 'N/A'}</td>
+            <td class="py-2.5 px-2.5 font-bold text-slate-800">${e.title}</td>
+            <td class="py-2.5 px-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 font-bold text-slate-600">${e.category}</span></td>
+            <td class="py-2.5 px-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${e.source === 'UPI' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'}">${e.source || 'Cash'}</span></td>
+            <td class="py-2.5 px-2.5 text-right font-black text-rose-600">₹${parseFloat(e.amount).toFixed(2)}</td>
+            <td class="py-2.5 px-2.5 text-center">
+              <button onclick="deleteExpense(${idx})" class="text-rose-500 hover:text-rose-700 font-bold hover:underline" title="Delete">✕</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function exportExpensesCSV() {
+      if (expensesHistory.length === 0) {
+        alert("Export karne ke liye koi expense data nahi hai!");
+        return;
+      }
+      let csv = "ID,Date,Time,Description,Category,Source,Amount\n";
+      expensesHistory.forEach(e => {
+        csv += `"${e.id}","${e.date}","${e.time}","${e.title}","${e.category}","${e.source}",${e.amount}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "Studio_Manorama_Daily_Expenses.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportAllBillsCSV() {
+      if (billsHistory.length === 0) {
+        alert("Export karne ke liye koi bill data nahi hai!");
+        return;
+      }
+      let csv = "Invoice,Date,Customer,Phone,Items,Mode,Total\n";
+      billsHistory.forEach(b => {
+        csv += `"${b.invoice}","${b.date}","${b.customer}","${b.phone || ''}",${b.itemsCount},"${b.paymentMode}","${b.total}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "Studio_Manorama_All_Bills_Archive.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  
+    let lastGeneratedBillSnapshot = null;
+
+    function getCurrentBillSnapshot() {
+      if (lastGeneratedBillSnapshot) return lastGeneratedBillSnapshot;
+      if (billsHistory.length > 0) return billsHistory[0];
+      return null;
+    }
+
+    function formatBillMessage(b) {
+      const totVal = parseFloat((b.total || '0').replace('₹', '')) || 0;
+      const paidVal = (b.paid !== undefined) ? parseFloat(b.paid) : totVal;
+      const dueVal = (b.due !== undefined) ? parseFloat(b.due) : Math.max(0, totVal - paidVal);
+
+      let msg = `*STUDIO MANORAMA - INVOICE*\n`;
+      msg += `Vidyapati Nagar, Samastipur | Mob: 7542074417\n`;
+      msg += `--------------------------------\n`;
+      msg += `Bill No: ${b.invoice}\n`;
+      msg += `Date: ${b.date}\n`;
+      msg += `Customer: ${b.customer}\n`;
+      msg += `--------------------------------\n`;
+      (b.items || []).forEach(i => {
+        msg += `• ${i.name} x ${i.qty} = ₹${(i.price * i.qty).toFixed(2)}\n`;
+      });
+      msg += `--------------------------------\n`;
+      msg += `Subtotal: ${b.subtotal}\n`;
+      msg += `Discount: - ₹${parseFloat(b.discount || 0).toFixed(2)}\n`;
+      msg += `*Net Total: ${b.total}*\n`;
+      msg += `*Advance Paid (जमा): ₹${paidVal.toFixed(2)}*\n`;
+      if (dueVal > 0) {
+        msg += `*BALANCE DUE (बकाया): ₹${dueVal.toFixed(2)}*\n`;
+      }
+      msg += `--------------------------------\n`;
+      msg += `Pay via UPI: ${STORE_UPI}\n`;
+      msg += `Thank You! Visit Again!`;
+      return msg;
+    }
+
+    function sendDirectWhatsApp(invNo) {
+      const b = invNo ? billsHistory.find(x => x.invoice === invNo) : getCurrentBillSnapshot();
+      if (!b) {
+        alert("Pehle bill generate karein!");
+        return;
+      }
+      const rawPhone = (b.phone || '').trim();
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+      if (!cleanPhone || cleanPhone.length < 10) {
+        const manualPhone = prompt("Customer ka 10-digit mobile number dalein:", cleanPhone || "");
+        if (!manualPhone) return;
+        b.phone = manualPhone;
+      }
+      const finalPhone = b.phone.replace(/\D/g, '');
+      const msg = formatBillMessage(b);
+      const url = `https://api.whatsapp.com/send?phone=91${finalPhone}&text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    }
+
+    function sendDirectSMS(invNo) {
+      const b = invNo ? billsHistory.find(x => x.invoice === invNo) : getCurrentBillSnapshot();
+      if (!b) {
+        alert("Pehle bill generate karein!");
+        return;
+      }
+      const rawPhone = (b.phone || '').trim();
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+      if (!cleanPhone || cleanPhone.length < 10) {
+        const manualPhone = prompt("Customer ka 10-digit mobile number dalein:", cleanPhone || "");
+        if (!manualPhone) return;
+        b.phone = manualPhone;
+      }
+      const finalPhone = b.phone.replace(/\D/g, '');
+      const msg = formatBillMessage(b);
+      const url = `sms:+91${finalPhone}?body=${encodeURIComponent(msg)}`;
+      window.location.href = url;
+    }
+
+    function clearDueAmount(invNo) {
+      const bill = billsHistory.find(b => b.invoice === invNo);
+      if (!bill) return;
+
+      const totVal = parseFloat((bill.total || '0').replace('₹', '')) || 0;
+      const currPaid = (bill.paid !== undefined) ? parseFloat(bill.paid) : totVal;
+      const currDue = (bill.due !== undefined) ? parseFloat(bill.due) : Math.max(0, totVal - currPaid);
+
+      const amountToClear = prompt(`Invoice ${invNo}:\nKul Bill: ${bill.total}\nAbhi Jama: ₹${currPaid.toFixed(2)}\nBaki Due: ₹${currDue.toFixed(2)}\n\nCustomer ne abhi kitna jama kiya?`, currDue.toFixed(2));
+      if (amountToClear === null) return;
+
+      const payingNow = parseFloat(amountToClear);
+      if (isNaN(payingNow) || payingNow <= 0) {
+        alert("Sahi amount dalein!");
+        return;
+      }
+
+      bill.paid = Math.min(totVal, currPaid + payingNow);
+      bill.due = Math.max(0, totVal - bill.paid);
+
+      localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
+      if (billsRef) {
+        billsRef.set(billsHistory).catch(err => {
+          console.warn("Firebase Due Update Warning:", err);
+        });
+      }
+
+      renderDaybookTable();
+      renderRecordsArchiveTable();
+      updateDashboardMetrics();
+      alert(`Invoice ${invNo} me ₹${payingNow.toFixed(2)} jama kar liya gaya! Naya Due: ₹${bill.due.toFixed(2)}`);
+    }
+
+  </script>
+</body>
+</html>
