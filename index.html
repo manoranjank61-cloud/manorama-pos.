@@ -17,63 +17,83 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-          <style>
+    <style>
     @media print {
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+      }
+
       body * {
         visibility: hidden !important;
       }
-      /* PRINTING A4 BILL ONLY */
+
+      /* PRINTING BILL ONLY - STRICTLY 1 PAGE ON 8-INCH PAPER */
       body.printing-bill #printable-a4-bill,
       body.printing-bill #printable-a4-bill * {
         visibility: visible !important;
       }
+
       body.printing-bill #printable-a4-bill {
         display: block !important;
-        position: absolute !important;
+        position: relative !important;
         left: 0 !important;
         top: 0 !important;
         width: 100% !important;
-        max-width: 190mm !important;
+        max-width: 195mm !important;
         margin: 0 auto !important;
-        padding: 4mm !important;
+        padding: 2mm 3mm !important;
         background: #ffffff !important;
         color: #000000 !important;
         box-sizing: border-box !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        page-break-before: avoid !important;
+        break-before: avoid !important;
       }
+
       body.printing-bill #printable-a4-bill table {
         width: 100% !important;
         border-collapse: collapse !important;
+        page-break-inside: avoid !important;
       }
+
       body.printing-bill #printable-a4-bill #a4-bill-qrcode-box {
         display: block !important;
-        width: 105px !important;
-        height: 105px !important;
-        max-height: 105px !important;
+        width: 85px !important;
+        height: 85px !important;
+        max-height: 85px !important;
         overflow: hidden !important;
         background: #ffffff !important;
         margin: 0 !important;
         padding: 0 !important;
       }
-      /* Hide the redundant canvas to prevent duplicate/overlay QR code */
+
       body.printing-bill #printable-a4-bill #a4-bill-qrcode-box canvas {
         display: none !important;
         visibility: hidden !important;
         width: 0 !important;
         height: 0 !important;
       }
-      /* Only display the single sharp image */
+
       body.printing-bill #printable-a4-bill #a4-bill-qrcode-box img {
         display: block !important;
         visibility: visible !important;
-        width: 105px !important;
-        height: 105px !important;
-        max-width: 105px !important;
-        max-height: 105px !important;
+        width: 85px !important;
+        height: 85px !important;
+        max-width: 85px !important;
+        max-height: 85px !important;
         margin: 0 !important;
         object-fit: contain !important;
       }
+
       body.printing-bill #printable-barcode-sheet {
         display: none !important;
       }
@@ -83,33 +103,40 @@
       body.printing-stickers #printable-barcode-sheet * {
         visibility: visible !important;
       }
+
       body.printing-stickers #printable-barcode-sheet {
         display: block !important;
-        position: absolute !important;
+        position: relative !important;
         left: 0 !important;
         top: 0 !important;
         width: 100% !important;
+        max-width: 195mm !important;
         margin: 0 !important;
-        padding: 4mm !important;
+        padding: 3mm !important;
         background: #ffffff !important;
         color: #000000 !important;
+        page-break-inside: avoid !important;
+        page-break-after: avoid !important;
       }
+
       body.printing-stickers #printable-barcode-sheet #a4-barcode-grid-container {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 5mm !important;
+        gap: 3mm !important;
       }
+
       body.printing-stickers #printable-barcode-sheet svg {
         display: block !important;
         margin: 0 auto !important;
       }
+
       body.printing-stickers #printable-a4-bill {
         display: none !important;
       }
 
       @page {
-        size: A4 portrait;
-        margin: 8mm;
+        size: auto;
+        margin: 3mm;
       }
     }
   </style>
@@ -128,7 +155,7 @@
             <h1 class="text-base sm:text-lg font-bold leading-none">Studio Manorama</h1>
             <span class="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Smart POS</span>
           </div>
-          <p class="text-[11px] text-pink-200 mt-0.5">Vidyapati Nagar, Samastipur | Mob: 7542074417 | UPI: 7903358228@ybl</p>
+          <p class="text-[11px] text-pink-200 mt-0.5">Vidyapati Nagar, Samastipur | Mob: 7542074417 | UPI: manoranjank61-1@okicici</p>
         </div>
       </div>
 
@@ -138,13 +165,16 @@
           <i class="fa-solid fa-chart-line"></i> Dashboard
         </button>
         <button onclick="switchTab('billing')" id="tab-billing" class="bg-[#630c20] text-pink-100 hover:bg-[#500919] font-bold text-xs px-3.5 py-2 rounded-xl border border-pink-900/40 flex items-center gap-1.5 whitespace-nowrap transition">
-          <i class="fa-solid fa-cash-register"></i> Billing & Daybook
+          <i class="fa-solid fa-cash-register"></i> Billing
+        </button>
+        <button onclick="switchTab('records')" id="tab-records" class="bg-[#630c20] text-pink-100 hover:bg-[#500919] font-bold text-xs px-3.5 py-2 rounded-xl border border-pink-900/40 flex items-center gap-1.5 whitespace-nowrap transition">
+          <i class="fa-solid fa-clock-rotate-left"></i> Records Archive
         </button>
         <button onclick="switchTab('stock')" id="tab-stock" class="bg-[#630c20] text-pink-100 hover:bg-[#500919] font-bold text-xs px-3.5 py-2 rounded-xl border border-pink-900/40 flex items-center gap-1.5 whitespace-nowrap transition">
           <i class="fa-solid fa-boxes-stacked"></i> Stock Master
         </button>
         <button onclick="switchTab('barcodes')" id="tab-barcodes" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-xs px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 whitespace-nowrap transition">
-          <i class="fa-solid fa-barcode"></i> A4 Barcode Printer
+          <i class="fa-solid fa-barcode"></i> Barcode Printer
         </button>
       </div>
     </div>
@@ -153,7 +183,7 @@
   <!-- ================= MAIN CONTAINER ================= -->
   <main class="max-w-7xl mx-auto p-3 sm:p-5">
 
-    <!-- ================= VIEW 0: DASHBOARD & DAILY COLLECTION / EXPENSES ================= -->
+    <!-- ================= VIEW 0: DASHBOARD ================= -->
     <section id="view-dashboard" class="space-y-6">
       
       <!-- TOP METRIC CARDS GRID -->
@@ -178,7 +208,7 @@
           </div>
           <div class="mt-2">
             <div id="dash-cash-sales" class="text-lg sm:text-xl font-black text-emerald-700">₹0.00</div>
-            <span class="text-[10px] text-emerald-600">नकद संग्रह (Cash in hand)</span>
+            <span class="text-[10px] text-emerald-600">नकद संग्रह (Cash)</span>
           </div>
         </div>
 
@@ -190,11 +220,11 @@
           </div>
           <div class="mt-2">
             <div id="dash-upi-sales" class="text-lg sm:text-xl font-black text-purple-700">₹0.00</div>
-            <span class="text-[10px] text-purple-600">ऑनलाइन संग्रह (GPay/PhonePe)</span>
+            <span class="text-[10px] text-purple-600">ऑनलाइन संग्रह (UPI)</span>
           </div>
         </div>
 
-        <!-- EXPENSE (खर्च) -->
+        <!-- EXPENSE -->
         <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-xs flex flex-col justify-between bg-rose-50/20">
           <div class="flex items-center justify-between text-slate-400">
             <span class="text-[10px] font-bold uppercase tracking-wider text-rose-800">Today's Expense</span>
@@ -202,11 +232,11 @@
           </div>
           <div class="mt-2">
             <div id="dash-total-expense" class="text-lg sm:text-xl font-black text-rose-600">₹0.00</div>
-            <span class="text-[10px] text-rose-500">दुकान का आज का कुल खर्च</span>
+            <span class="text-[10px] text-rose-500">आज का कुल खर्च</span>
           </div>
         </div>
 
-        <!-- NET CASH BALANCE / PROFIT -->
+        <!-- NET BALANCE -->
         <div class="bg-white p-4 rounded-2xl border border-amber-200 shadow-xs flex flex-col justify-between bg-amber-50/30">
           <div class="flex items-center justify-between text-slate-400">
             <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900">Net Balance</span>
@@ -214,19 +244,19 @@
           </div>
           <div class="mt-2">
             <div id="dash-net-balance" class="text-lg sm:text-xl font-black text-amber-800">₹0.00</div>
-            <span class="text-[10px] text-amber-700">शुद्ध शेष (बिक्री - खर्च)</span>
+            <span class="text-[10px] text-amber-700">शुद्ध शेष (Sales - Expense)</span>
           </div>
         </div>
 
-        <!-- INVOICE COUNT -->
+        <!-- BILL COUNT -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div class="flex items-center justify-between text-slate-400">
-            <span class="text-[10px] font-bold uppercase tracking-wider">Total Bills</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Today's Bills</span>
             <i class="fa-solid fa-file-invoice text-slate-600"></i>
           </div>
           <div class="mt-2">
             <div id="dash-total-bills" class="text-lg sm:text-xl font-black text-slate-800">0</div>
-            <span class="text-[10px] text-slate-500">कुल कटे इनवॉइस बिल</span>
+            <span class="text-[10px] text-slate-500">आज कटे कुल बिल</span>
           </div>
         </div>
       </div>
@@ -234,19 +264,19 @@
       <!-- EXPENSE ENTRY & HISTORY SECTION -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        <!-- LEFT: ADD EXPENSE FORM (COL 5) -->
+        <!-- LEFT: ADD EXPENSE FORM -->
         <div class="lg:col-span-5 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
           <div class="flex items-center justify-between border-b pb-2">
             <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
               <i class="fa-solid fa-receipt text-rose-600"></i>
-              <span>Record Daily Expense (खर्च दर्ज करें)</span>
+              <span>Record Daily Expense (दैनिक खर्च)</span>
             </h3>
             <span class="text-[10px] bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded-full border border-rose-200">Daily Kharcha</span>
           </div>
 
           <div class="space-y-2.5 text-xs">
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Expense Title / Description (खर्च का विवरण)</label>
+              <label class="block font-bold text-slate-700 mb-1">Expense Title / Description (खर्च विवरण)</label>
               <input id="exp-title" type="text" placeholder="e.g. Chai, Nasta, Studio Bulb, Xerox Paper, Rent..." class="w-full border rounded-xl p-2 bg-slate-50 focus:bg-white focus:ring-1 focus:ring-[#7b132b] outline-none font-bold">
             </div>
 
@@ -269,7 +299,7 @@
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Payment Source (खर्च किस माध्यम से दिया)</label>
+              <label class="block font-bold text-slate-700 mb-1">Payment Source (भुगतान माध्यम)</label>
               <div class="grid grid-cols-2 gap-2">
                 <button type="button" onclick="setExpenseSource('Cash')" id="exp-src-Cash" class="py-1.5 border-2 border-emerald-600 bg-emerald-50 text-emerald-800 font-bold rounded-xl text-center">
                   💵 Cash (गल्ले से नकद)
@@ -287,7 +317,7 @@
           </div>
         </div>
 
-        <!-- RIGHT: TODAY'S EXPENSES LIST (COL 7) -->
+        <!-- RIGHT: TODAY'S EXPENSES LIST -->
         <div class="lg:col-span-7 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between border-b pb-2 mb-3">
@@ -327,14 +357,13 @@
 
     </section>
 
-
-    <!-- ================= VIEW 1: BILLING & DAYBOOK ================= -->
+    <!-- ================= VIEW 1: BILLING & TODAY'S DAYBOOK ================= -->
     <section id="view-billing" class="hidden space-y-6">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        <!-- LEFT: CATALOG & MANUAL PRODUCT SELECTION -->
+        <!-- LEFT: CATALOG -->
         <div class="lg:col-span-7 xl:col-span-8 space-y-4">
-          <!-- SEARCH & QUICK BARCODE INPUT -->
+          <!-- SEARCH & QUICK ADD -->
           <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-2">
             <div class="relative flex-1">
               <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
@@ -345,7 +374,7 @@
             </button>
           </div>
 
-          <!-- CATEGORY PILLS (Including Bangles & Jewelry) -->
+          <!-- CATEGORY PILLS -->
           <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold scrollbar-none">
             <button onclick="filterCategory('All')" id="cat-All" class="px-3.5 py-1.5 rounded-full bg-[#7b132b] text-white shadow whitespace-nowrap">All Items</button>
             <button onclick="filterCategory('Photography')" id="cat-Photography" class="px-3.5 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 whitespace-nowrap">📸 Photography & Xerox</button>
@@ -358,9 +387,7 @@
           </div>
 
           <!-- PRODUCT TILES -->
-          <div id="billing-product-grid" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[560px] overflow-y-auto pr-1">
-            <!-- Dynamically populated -->
-          </div>
+          <div id="billing-product-grid" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[560px] overflow-y-auto pr-1"></div>
         </div>
 
         <!-- RIGHT: INVOICE CART & TOTALS -->
@@ -368,7 +395,7 @@
           <div>
             <div class="flex items-center justify-between border-b pb-2 mb-3">
               <div>
-                <h2 class="text-sm font-bold text-slate-800">Current Invoice (A4 Bill)</h2>
+                <h2 class="text-sm font-bold text-slate-800">Current Bill Invoice</h2>
                 <span id="cart-item-count" class="text-[11px] text-slate-400">0 items selected</span>
               </div>
               <button onclick="clearCart()" class="text-xs font-bold text-red-500 hover:text-red-700">Clear All</button>
@@ -381,23 +408,31 @@
             </div>
 
             <!-- CART ITEMS LIST -->
-            <div id="cart-items-box" class="min-h-[160px] max-h-[240px] overflow-y-auto border border-slate-100 rounded-xl p-2 mb-3 bg-slate-50/50 space-y-1.5">
-              <!-- Rendered items -->
-            </div>
+            <div id="cart-items-box" class="min-h-[160px] max-h-[240px] overflow-y-auto border border-slate-100 rounded-xl p-2 mb-3 bg-slate-50/50 space-y-1.5"></div>
 
-            <!-- TOTALS -->
-            <div class="space-y-1.5 text-xs border-t pt-3">
+            <!-- TOTALS WITH ADVANCE & BALANCE DUE -->
+            <div class="space-y-1.5 text-xs border-t pt-2.5">
               <div class="flex justify-between text-slate-600">
-                <span>Subtotal</span>
+                <span>Subtotal (कुल राशि)</span>
                 <span id="lbl-subtotal" class="font-bold">₹0.00</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-600">Discount (₹)</span>
-                <input id="bill-discount" type="number" min="0" value="0" oninput="calculateTotals()" class="w-20 border rounded-lg px-2 py-0.5 text-right font-bold text-xs bg-slate-50">
+                <span class="text-slate-600">Discount (छूट ₹)</span>
+                <input id="bill-discount" type="number" min="0" value="0" oninput="calculateTotals(true)" class="w-20 border rounded-lg px-2 py-0.5 text-right font-bold text-xs bg-slate-50 outline-none focus:ring-1 focus:ring-[#7b132b]">
               </div>
-              <div class="flex justify-between items-center text-base sm:text-lg font-bold border-t pt-2 text-slate-800">
-                <span>Net Total Payable</span>
-                <span id="lbl-net-total" class="text-[#7b132b] font-black text-xl">₹0.00</span>
+              <div class="flex justify-between items-center font-bold text-slate-800 border-t pt-1.5">
+                <span>Net Bill Total (शुद्ध बिल)</span>
+                <span id="lbl-net-total" class="text-[#7b132b] font-black text-lg">₹0.00</span>
+              </div>
+              <!-- ADVANCE PAYMENT INPUT -->
+              <div class="flex items-center justify-between bg-emerald-50/60 p-1.5 rounded-lg border border-emerald-200">
+                <span class="font-bold text-emerald-800">Advance Paid (जमा राशि ₹)</span>
+                <input id="bill-paid" type="number" min="0" placeholder="0" oninput="calculateTotals(false)" class="w-24 border border-emerald-400 rounded-lg px-2 py-1 text-right font-black text-emerald-700 bg-white outline-none focus:ring-1 focus:ring-emerald-600">
+              </div>
+              <!-- BALANCE DUE DISPLAY -->
+              <div class="flex justify-between items-center bg-rose-50/60 p-1.5 rounded-lg border border-rose-200 font-bold">
+                <span class="text-rose-800">Balance Due (बकाया राशि ₹)</span>
+                <span id="lbl-due-amount" class="text-rose-700 font-black text-sm">₹0.00</span>
               </div>
             </div>
 
@@ -412,19 +447,33 @@
             </div>
           </div>
 
-          <!-- PRINT BILL BUTTON -->
-          <div class="mt-4 pt-3 border-t">
-            <button onclick="generateAndPrintA4Bill()" class="w-full bg-[#7b132b] hover:bg-[#630c20] text-white font-bold py-3 rounded-xl text-sm shadow flex items-center justify-center gap-2 transition">
+          <!-- PRINT & WHATSAPP / SMS ACTION BAR -->
+          <div class="mt-3 pt-2.5 border-t space-y-2">
+            <button onclick="generateAndPrintA4Bill()" class="w-full bg-[#7b132b] hover:bg-[#630c20] text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm shadow flex items-center justify-center gap-2 transition">
               <i class="fa-solid fa-print text-base"></i>
-              <span>Save & Print A4 Invoice Bill</span>
+              <span>Save & Print Invoice Bill</span>
             </button>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="sendDirectWhatsApp(null)" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow flex items-center justify-center gap-1.5 transition">
+                <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp Bill
+              </button>
+              <button onclick="sendDirectSMS(null)" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs shadow flex items-center justify-center gap-1.5 transition">
+                <i class="fa-solid fa-comment-sms text-sm"></i> SMS Bill
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- TODAY'S DAYBOOK -->
+      <!-- TODAY'S DAYBOOK (ONLY TODAY'S BILLS) -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
-        <h3 class="text-sm sm:text-base font-bold text-slate-800 mb-3">Today's Daybook (Sales History)</h3>
+        <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-800">Today's Daybook (सिर्फ आज की हिस्ट्री)</h3>
+            <p class="text-[11px] text-slate-400">Aaj kate huye bills yahan dikhenge jinhe zaroorat padne par turant reprint kar sakte hain.</p>
+          </div>
+          <span id="today-bill-counter" class="text-xs bg-pink-50 text-[#7b132b] font-bold px-3 py-1 rounded-full border border-pink-200">0 Bills Today</span>
+        </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-50 text-slate-500 font-semibold uppercase border-b text-[10px]">
@@ -435,6 +484,8 @@
                 <th class="py-2 px-3">ITEMS</th>
                 <th class="py-2 px-3">PAY MODE</th>
                 <th class="py-2 px-3 text-right">TOTAL</th>
+                <th class="py-2 px-3 text-right">PAID (जमा)</th>
+                <th class="py-2 px-3 text-right">DUE (बकाया)</th>
                 <th class="py-2 px-3 text-center">ACTION</th>
               </tr>
             </thead>
@@ -444,20 +495,80 @@
       </div>
     </section>
 
-    <!-- ================= VIEW 2: STOCK MASTER (MANUAL & SMART BARCODE GENERATOR) ================= -->
+    <!-- ================= VIEW 1.5: RECORDS ARCHIVE (PREVIOUS BILLS BY DATE/SEARCH) ================= -->
+    <section id="view-records" class="hidden space-y-5">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-800">Bills Records Archive (पुराने रिकॉर्ड्स व कैलेंडर सर्च)</h2>
+            <p class="text-xs text-slate-500">Pichli tareekh ka bill khojein, payment mode check/change karein ya dubara print karein.</p>
+          </div>
+          <button onclick="exportAllBillsCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-3 py-2 rounded-xl border flex items-center gap-1">
+            <i class="fa-solid fa-file-csv text-emerald-600"></i> Export All Bills
+          </button>
+        </div>
+
+        <!-- SEARCH FILTERS WITH CALENDAR DATE PICKER -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs mb-4">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Pick Date (तारीख चुनें)</label>
+            <input type="date" id="archive-date-picker" onchange="filterRecordsArchive()" class="w-full border rounded-lg p-2 bg-white font-bold outline-none">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Search Customer / Phone</label>
+            <input type="text" id="archive-search-input" oninput="filterRecordsArchive()" placeholder="Name, Phone or Inv No..." class="w-full border rounded-lg p-2 bg-white outline-none">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Payment Mode Filter</label>
+            <select id="archive-mode-filter" onchange="filterRecordsArchive()" class="w-full border rounded-lg p-2 bg-white font-semibold">
+              <option value="All">All Modes (सभी)</option>
+              <option value="Cash">Cash Only</option>
+              <option value="UPI">UPI Only</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-1.5">
+            <button onclick="resetArchiveFilters()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-lg">
+              Reset Filters
+            </button>
+          </div>
+        </div>
+
+        <!-- ARCHIVE TABLE -->
+        <div class="overflow-x-auto border rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b text-[10px]">
+              <tr>
+                <th class="py-2.5 px-3">INVOICE NO.</th>
+                <th class="py-2.5 px-3">DATE & TIME</th>
+                <th class="py-2.5 px-3">CUSTOMER</th>
+                <th class="py-2.5 px-3">ITEMS</th>
+                <th class="py-2.5 px-3">PAY MODE</th>
+                <th class="py-2.5 px-3 text-right">TOTAL</th>
+                <th class="py-2.5 px-3 text-right">PAID (जमा)</th>
+                <th class="py-2.5 px-3 text-right">DUE (बकाया)</th>
+                <th class="py-2.5 px-3 text-center">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="archive-table-rows" class="divide-y divide-slate-100 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 2: STOCK MASTER ================= -->
     <section id="view-stock" class="hidden space-y-5">
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
           <div>
             <h2 class="text-base sm:text-lg font-bold text-slate-800">Stock & Barcode Master</h2>
-            <p class="text-xs text-slate-500">Add products with custom smart barcodes embedding Category, Purchase Price & MRP.</p>
+            <p class="text-xs text-slate-500">Category, Purchase Rate aur MRP ke anusaar smart barcodes banayein.</p>
           </div>
           <button onclick="toggleStockForm(true)" class="bg-[#7b132b] hover:bg-[#630c20] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow">
             <i class="fa-solid fa-plus"></i> Add New Product
           </button>
         </div>
 
-        <!-- INLINE ADD / EDIT FORM WITH EMBEDDED BARCODE BUILDER -->
+        <!-- INLINE FORM -->
         <div id="stock-form-panel" class="hidden mb-6 p-4 border border-pink-200 rounded-2xl bg-pink-50/40">
           <h3 id="form-header-title" class="text-xs font-bold text-[#7b132b] uppercase tracking-wider mb-3">New Product Entry</h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
@@ -491,7 +602,7 @@
             </div>
             <div class="sm:col-span-2">
               <label class="block font-bold text-slate-700 mb-1">
-                Generated Smart Barcode (खरीद मूल्य और MRP युक्त बारकोड)
+                Generated Smart Barcode
               </label>
               <div class="flex gap-2">
                 <input id="inp-barcode" type="text" placeholder="e.g. BNG-100-180-845" class="w-full border rounded-xl p-2 bg-amber-50 font-mono font-bold text-slate-900">
@@ -499,7 +610,7 @@
                   Re-Generate
                 </button>
               </div>
-              <p class="text-[10px] text-slate-500 mt-1">Structure: <span class="font-mono font-bold text-[#7b132b]">[CATEGORY]-[PURCHASE PRICE]-[MRP]-[CODE]</span></p>
+              <p class="text-[10px] text-slate-500 mt-1">Structure: <span class="font-mono font-bold text-[#7b132b]">[CAT]-[COST]-[MRP]-[CODE]</span></p>
             </div>
           </div>
 
@@ -529,13 +640,13 @@
       </div>
     </section>
 
-    <!-- ================= VIEW 3: A4 BARCODE STICKER SHEET PRINTER ================= -->
+    <!-- ================= VIEW 3: BARCODE STICKER SHEET PRINTER ================= -->
     <section id="view-barcodes" class="hidden space-y-5">
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
           <div>
-            <h2 class="text-base sm:text-lg font-bold text-slate-800">A4 Barcode Label Sheet Generator</h2>
-            <p class="text-xs text-slate-500">A4 शीट पर क्वांटिटी के अनुसार बारकोड स्टीकर व्यवस्थित करके प्रिंट करें।</p>
+            <h2 class="text-base sm:text-lg font-bold text-slate-800">Barcode Label Sheet Generator</h2>
+            <p class="text-xs text-slate-500">8-Inch width standard sheet par stickers quantity ke hisaab se print karein.</p>
           </div>
           <div class="flex flex-wrap gap-2">
             <button onclick="selectAllStockForBarcodePrint()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-3 py-2 rounded-xl border flex items-center gap-1">
@@ -545,12 +656,12 @@
               <i class="fa-solid fa-xmark text-rose-600"></i> Deselect All
             </button>
             <button onclick="printA4BarcodeSheet()" class="bg-[#7b132b] hover:bg-[#630c20] text-white text-xs font-bold px-4 py-2 rounded-xl shadow flex items-center gap-1.5">
-              <i class="fa-solid fa-print"></i> Print A4 Barcode Sheet
+              <i class="fa-solid fa-print"></i> Print Barcode Sheet
             </button>
           </div>
         </div>
 
-        <p class="text-xs font-bold text-slate-600 mb-2">Select Items & Label Quantities to Print on A4 Paper:</p>
+        <p class="text-xs font-bold text-slate-600 mb-2">Select Items & Label Quantities to Print:</p>
 
         <!-- BARCODE SELECTION TABLE -->
         <div class="overflow-x-auto border rounded-xl">
@@ -573,130 +684,131 @@
 
   </main>
 
-      <!-- ================= PRINTABLE 1: A4 INVOICE BILL (100% TABLE-BASED ROCK SOLID PRINT) ================= -->
-  <div id="printable-a4-bill" class="hidden" style="width: 100%; max-width: 190mm; margin: 0 auto; background: #ffffff; color: #000000; font-family: Arial, Helvetica, sans-serif; padding: 4mm; box-sizing: border-box; border: 1.5px solid #000;">
+  <!-- ================= PRINTABLE 1: 8-INCH COMPACT INVOICE (NO BLANK PAGES) ================= -->
+  <div id="printable-a4-bill" class="hidden" style="width: 100%; max-width: 195mm; margin: 0 auto; background: #ffffff; color: #000000; font-family: Arial, Helvetica, sans-serif; padding: 3mm; box-sizing: border-box; border: 1.2px solid #000;">
     
-    <!-- STORE HEADER TABLE -->
-    <table style="width: 100%; border-bottom: 2px solid #7b132b; padding-bottom: 8px; margin-bottom: 10px; border-collapse: collapse;">
+    <!-- STORE HEADER -->
+    <table style="width: 100%; border-bottom: 2px solid #7b132b; padding-bottom: 4px; margin-bottom: 6px; border-collapse: collapse;">
       <tr>
         <td style="vertical-align: top;">
-          <h1 style="font-size: 24px; font-weight: 900; margin: 0; color: #7b132b; text-transform: uppercase; letter-spacing: 0.5px; font-family: Arial, sans-serif;">STUDIO MANORAMA</h1>
-          <p style="font-size: 12px; font-weight: bold; margin: 2px 0 1px 0; color: #000;">Vidyapati Nagar, Samastipur (Bihar - 848503)</p>
-          <p style="font-size: 11px; margin: 1px 0; color: #333;">Deals in: Cosmetics, Bangles (लाहठी), Jewelry, Photography & Xerox</p>
-          <p style="font-size: 12px; font-weight: bold; margin: 2px 0 0 0; color: #000;">Mob: +91 7542074417 | UPI: 7903358228@ybl</p>
+          <h1 style="font-size: 20px; font-weight: 900; margin: 0; color: #7b132b; text-transform: uppercase; letter-spacing: 0.5px;">STUDIO MANORAMA</h1>
+          <p style="font-size: 11px; font-weight: bold; margin: 2px 0 1px 0; color: #000;">Vidyapati Nagar, Samastipur (Bihar - 848503)</p>
+          <p style="font-size: 10px; margin: 1px 0; color: #333;">Deals in: Cosmetics, Bangles (लाहठी), Jewelry, Photography & Xerox</p>
+          <p style="font-size: 11px; font-weight: bold; margin: 2px 0 0 0; color: #000;">Mob: +91 7542074417</p>
         </td>
         <td style="vertical-align: top; text-align: right; width: 140px;">
-          <div style="background: #7b132b; color: #ffffff; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; text-transform: uppercase; margin-bottom: 4px;">TAX INVOICE</div>
-          <div style="font-size: 13px; font-weight: bold; margin: 2px 0 1px 0;" id="a4-inv-no">Inv: SM-1001</div>
-          <div style="font-size: 11px; margin: 1px 0; color: #444;" id="a4-inv-date">Date: 04/11/2026</div>
+          <div style="background: #7b132b; color: #ffffff; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 3px; display: inline-block; text-transform: uppercase; margin-bottom: 2px;">TAX INVOICE</div>
+          <div style="font-size: 12px; font-weight: bold; margin: 2px 0 1px 0;" id="a4-inv-no">Inv: SM-1001</div>
+          <div style="font-size: 10px; margin: 1px 0; color: #444;" id="a4-inv-date">Date: 04/11/2026</div>
         </td>
       </tr>
     </table>
 
-    <!-- CUSTOMER DETAILS TABLE -->
-    <table style="width: 100%; border: 1px solid #999; margin-bottom: 10px; border-collapse: collapse; font-size: 12px; background: #fafafa;">
+    <!-- CUSTOMER DETAILS -->
+    <table style="width: 100%; border: 1px solid #999; margin-bottom: 6px; border-collapse: collapse; font-size: 11px; background: #fafafa;">
       <tr>
-        <td style="padding: 6px 10px; width: 40%;">
-          <strong>Customer Name:</strong> <span id="a4-cust-name" style="font-weight: bold;">Walk-in</span>
+        <td style="padding: 4px 8px; width: 40%;">
+          <strong>Customer:</strong> <span id="a4-cust-name" style="font-weight: bold;">Walk-in</span>
         </td>
-        <td style="padding: 6px 10px; width: 35%;">
-          <strong>Mobile / WhatsApp:</strong> <span id="a4-cust-phone">N/A</span>
+        <td style="padding: 4px 8px; width: 35%;">
+          <strong>Contact:</strong> <span id="a4-cust-phone">N/A</span>
         </td>
-        <td style="padding: 6px 10px; width: 25%; text-align: right;">
-          <strong>Payment Mode:</strong> <span id="a4-cust-paymode" style="font-weight: bold; text-transform: uppercase; color: #7b132b;">CASH</span>
+        <td style="padding: 4px 8px; width: 25%; text-align: right;">
+          <strong>Mode:</strong> <span id="a4-cust-paymode" style="font-weight: bold; text-transform: uppercase; color: #7b132b;">CASH</span>
         </td>
       </tr>
     </table>
 
     <!-- ITEMS TABLE -->
-    <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; border: 1px solid #000;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 6px; border: 1px solid #000;">
       <thead>
         <tr style="background: #f4eff1; border-bottom: 1.5px solid #000;">
-          <th style="padding: 6px 4px; text-align: center; width: 35px; border-right: 1px solid #000;">S.N.</th>
-          <th style="padding: 6px 8px; text-align: left; border-right: 1px solid #000;">Item Description</th>
-          <th style="padding: 6px 6px; text-align: center; width: 140px; border-right: 1px solid #000;">Barcode / Code</th>
-          <th style="padding: 6px 6px; text-align: center; width: 55px; border-right: 1px solid #000;">Qty</th>
-          <th style="padding: 6px 8px; text-align: right; width: 85px; border-right: 1px solid #000;">Rate (₹)</th>
-          <th style="padding: 6px 8px; text-align: right; width: 95px;">Total (₹)</th>
+          <th style="padding: 4px 3px; text-align: center; width: 30px; border-right: 1px solid #000;">S.N.</th>
+          <th style="padding: 4px 6px; text-align: left; border-right: 1px solid #000;">Item Description</th>
+          <th style="padding: 4px 4px; text-align: center; width: 130px; border-right: 1px solid #000;">Barcode</th>
+          <th style="padding: 4px 4px; text-align: center; width: 45px; border-right: 1px solid #000;">Qty</th>
+          <th style="padding: 4px 6px; text-align: right; width: 75px; border-right: 1px solid #000;">Rate (₹)</th>
+          <th style="padding: 4px 6px; text-align: right; width: 85px;">Total (₹)</th>
         </tr>
       </thead>
       <tbody id="a4-bill-items-rows"></tbody>
     </table>
 
-    <!-- TOTALS & PAYMENT QR TABLE (CANNOT OVERLAP!) -->
-    <table style="width: 100%; border: 1.5px solid #7b132b; margin-bottom: 12px; border-collapse: collapse; background: #fffcfd;">
+    <!-- TOTALS & CLEAN DYNAMIC AMOUNT-LOCKED QR -->
+    <table style="width: 100%; border: 1.2px solid #7b132b; margin-bottom: 6px; border-collapse: collapse; background: #fffcfd;">
       <tr>
-                <!-- LEFT: CLEAN DYNAMIC LOCKED-AMOUNT QR (NO UPI ID TEXT) -->
-        <td style="width: 55%; vertical-align: middle; padding: 8px 10px; border-right: 1.5px solid #7b132b;">
+        <td style="width: 55%; vertical-align: middle; padding: 6px 8px; border-right: 1.2px solid #7b132b;">
           <table style="border-collapse: collapse;">
             <tr>
-              <td style="vertical-align: middle; width: 115px;">
-                <div style="border: 1px solid #7b132b; padding: 4px; background: #ffffff; display: inline-block; border-radius: 4px;">
-                  <div id="a4-bill-qrcode-box" style="width: 105px; height: 105px; display: flex; align-items: center; justify-content: center; background: #ffffff;"></div>
+              <td style="vertical-align: middle; width: 100px;">
+                <div style="border: 1px solid #7b132b; padding: 2px; background: #ffffff; display: inline-block; border-radius: 4px;">
+                  <div id="a4-bill-qrcode-box" style="width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; background: #ffffff;"></div>
                 </div>
               </td>
-              <td style="vertical-align: middle; padding-left: 12px;">
-                <div style="font-size: 14px; font-weight: 900; color: #7b132b; margin-bottom: 2px; text-transform: uppercase;">Scan & Pay</div>
-                <div style="font-size: 11px; font-weight: bold; color: #1e293b; margin-bottom: 3px;">Google Pay • PhonePe • Paytm • BHIM</div>
-                <div style="font-size: 10px; color: #047857; font-weight: bold; line-height: 1.4;">Final Bill Amount Auto-Locked</div>
-                <div style="font-size: 10px; color: #64748b; line-height: 1.3;">किसी भी UPI ऐप से स्कैन करके भुगतान करें</div>
+              <td style="vertical-align: middle; padding-left: 10px;">
+                <div style="font-size: 12px; font-weight: 900; color: #7b132b; margin-bottom: 1px; text-transform: uppercase;">Scan & Pay</div>
+                <div style="font-size: 10px; font-weight: bold; color: #1e293b; margin-bottom: 2px;">Google Pay • PhonePe • Paytm • BHIM</div>
+                <div style="font-size: 9px; color: #047857; font-weight: bold;">Amount Locked | Instant Pay</div>
+                <div style="font-size: 9px; color: #64748b;">किसी भी UPI ऐप से स्कैन करके पे करें</div>
               </td>
             </tr>
           </table>
         </td>
 
-<!-- RIGHT: CLEAR SUBTOTAL, DISCOUNT, NET PAYABLE -->
-        <td style="width: 45%; vertical-align: top; padding: 10px 14px; font-size: 12px;">
+        <td style="width: 45%; vertical-align: top; padding: 4px 8px; font-size: 10.5px;">
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 3px 0; color: #444;">Subtotal:</td>
-              <td style="padding: 3px 0; text-align: right; font-weight: bold;" id="a4-subtotal">₹0.00</td>
+              <td style="padding: 1.5px 0; color: #444;">Subtotal:</td>
+              <td style="padding: 1.5px 0; text-align: right; font-weight: bold;" id="a4-subtotal">₹0.00</td>
             </tr>
             <tr>
-              <td style="padding: 3px 0; color: #444;">Discount:</td>
-              <td style="padding: 3px 0; text-align: right; font-weight: bold; color: #047857;" id="a4-discount">- ₹0.00</td>
+              <td style="padding: 1.5px 0; color: #444;">Discount:</td>
+              <td style="padding: 1.5px 0; text-align: right; font-weight: bold; color: #047857;" id="a4-discount">- ₹0.00</td>
             </tr>
-            <tr style="border-top: 2px solid #7b132b; border-bottom: 2px solid #7b132b;">
-              <td style="padding: 6px 0; font-size: 15px; font-weight: 900; color: #7b132b;">NET PAYABLE:</td>
-              <td style="padding: 6px 0; text-align: right; font-size: 16px; font-weight: 900; color: #7b132b;" id="a4-net-total">₹0.00</td>
+            <tr style="border-top: 1px solid #7b132b; border-bottom: 1px solid #7b132b;">
+              <td style="padding: 2.5px 0; font-size: 11.5px; font-weight: 900; color: #7b132b;">NET TOTAL:</td>
+              <td style="padding: 2.5px 0; text-align: right; font-size: 12.5px; font-weight: 900; color: #7b132b;" id="a4-net-total">₹0.00</td>
+            </tr>
+            <tr>
+              <td style="padding: 1.5px 0; color: #047857; font-weight: bold;">Advance Paid (जमा):</td>
+              <td style="padding: 1.5px 0; text-align: right; font-weight: bold; color: #047857;" id="a4-paid-amount">₹0.00</td>
+            </tr>
+            <tr id="a4-due-row" style="border-top: 1px dashed #e11d48;">
+              <td style="padding: 2px 0; color: #be123c; font-weight: 900;">BALANCE DUE (बकाया):</td>
+              <td style="padding: 2px 0; text-align: right; font-weight: 900; color: #be123c;" id="a4-due-amount">₹0.00</td>
             </tr>
           </table>
         </td>
       </tr>
     </table>
 
-    <!-- TERMS & CONDITIONS (HINDI TRANSLATED) & BOLD FOOTER -->
-    <div style="font-size: 11px; line-height: 1.5; color: #1e293b; background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px;">
-      <div style="font-weight: bold; margin-bottom: 2px; color: #7b132b; text-decoration: underline;">दुकान के नियम एवं शर्तें (Terms & Conditions):</div>
+    <!-- RULES & FOOTER -->
+    <div style="font-size: 9.5px; line-height: 1.4; color: #1e293b; background: #f8fafc; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 3px; margin-bottom: 6px;">
       <div>• <strong>बिका हुआ माल वापस नहीं होगा। (No Return)</strong></div>
       <div>• <strong>स्टॉक उपलब्ध होने पर ही केवल एक्सचेंज संभव है। (Exchange only possible on availability)</strong></div>
       <div>• <strong>काउंटर छोड़ने से पहले कृपया अपने सामान की जांच अवश्य कर लें। (Before leaving counter please check your items)</strong></div>
     </div>
 
-    <!-- BOLD FOOTER -->
-    <div style="text-align: center; padding-top: 6px; border-top: 1px dashed #999;">
-      <h2 style="font-size: 17px; font-weight: 900; margin: 0; color: #000; text-transform: uppercase; letter-spacing: 1px;">
+    <div style="text-align: center; padding-top: 3px; border-top: 1px dashed #999;">
+      <h2 style="font-size: 13px; font-weight: 900; margin: 0; color: #000; text-transform: uppercase; letter-spacing: 0.5px;">
         THANK YOU! VISIT AGAIN!
       </h2>
-      <p style="font-size: 11px; font-weight: bold; color: #7b132b; margin: 2px 0 0 0;">Studio Manorama | धन्यवाद! फिर पधारें!</p>
+      <p style="font-size: 9px; font-weight: bold; color: #7b132b; margin: 1px 0 0 0;">Studio Manorama | धन्यवाद! फिर पधारें!</p>
     </div>
   </div>
 
-  <!-- ================= PRINTABLE 2: A4 BARCODE STICKER SHEET ================= -->
-  <div id="printable-barcode-sheet" class="hidden bg-white p-4 max-w-[210mm] mx-auto">
-    <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 4px; margin-bottom: 12px;">
-      <h2 style="font-size: 16px; font-weight: bold; margin: 0; text-transform: uppercase;">STUDIO MANORAMA - BARCODE LABELS SHEET</h2>
-      <p style="font-size: 10px; margin: 0;">A4 Printable Sticker Sheet | Mob: 7542074417</p>
+  <!-- ================= PRINTABLE 2: BARCODE STICKER SHEET ================= -->
+  <div id="printable-barcode-sheet" class="hidden bg-white p-3 max-w-[195mm] mx-auto">
+    <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 8px;">
+      <h2 style="font-size: 14px; font-weight: bold; margin: 0; text-transform: uppercase;">STUDIO MANORAMA - BARCODE LABELS SHEET</h2>
+      <p style="font-size: 9px; margin: 0;">Printable Sticker Sheet | Mob: 7542074417</p>
     </div>
-    <!-- 4 COLUMNS A4 GRID FOR LABELS -->
-    <div id="a4-barcode-grid-container" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6mm; align-items: start;">
-      <!-- Dynamic Barcode stickers -->
-    </div>
+    <div id="a4-barcode-grid-container" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; align-items: start;"></div>
   </div>
 
   <!-- SCRIPT LOGIC -->
   <script>
-    // ================= 1. STORE & FIREBASE CONFIG =================
+    // ================= 1. STORE & CONFIG =================
     const STORE_NAME = "Studio Manorama";
     const STORE_UPI = "manoranjank61-1@okicici";
     const STORE_PAYEE_NAME = "Manoranjan kumar";
@@ -727,9 +839,7 @@
       console.warn("Firebase Init:", e);
     }
 
-    // Default Seed Products with Bangles & Jewelry
-        const defaultCatalog = [
-      // Photography & Xerox Services
+    const defaultCatalog = [
       { barcode: "PHT-010-050-801", name: "Photo 8PP (8 Passport Photo)", category: "Photography", cost: 10, price: 50, stock: 999 },
       { barcode: "PHT-008-030-802", name: "Photo 4PP (4 Passport Photo)", category: "Photography", cost: 8, price: 30, stock: 999 },
       { barcode: "PHT-001-003-803", name: "Xerox / Photocopy (प्रति कॉपी)", category: "Photography", cost: 1, price: 3.00, stock: 999 },
@@ -745,8 +855,6 @@
       { barcode: "PHT-200-500-813", name: "Photo Print 20x24", category: "Photography", cost: 200, price: 500, stock: 999 },
       { barcode: "PHT-350-800-814", name: "Photo Print 30x32", category: "Photography", cost: 350, price: 800, stock: 999 },
       { barcode: "PHT-400-900-815", name: "Photo Print 24x36", category: "Photography", cost: 400, price: 900, stock: 999 },
-      
-      // Bangles, Jewelry & Cosmetics
       { barcode: "BNG-100-180-101", name: "Lahthi Multi 4pc Set", category: "Bangles", cost: 100, price: 180, stock: 15 },
       { barcode: "BNG-050-090-102", name: "Kangan Red Velvet 2pc", category: "Bangles", cost: 50, price: 90, stock: 20 },
       { barcode: "JWL-150-280-201", name: "Bridal Kundan Necklace Set", category: "Jewelry", cost: 150, price: 280, stock: 8 },
@@ -757,8 +865,7 @@
       { barcode: "GFT-120-220-501", name: "Studio Photo Frame 8x12", category: "Gifts & Photo", cost: 120, price: 220, stock: 10 }
     ];
 
-        let localStock = JSON.parse(localStorage.getItem("sm_pos_stock"));
-    // Ensure all default photography items exist in inventory
+    let localStock = JSON.parse(localStorage.getItem("sm_pos_stock"));
     if (localStock && Array.isArray(localStock)) {
       defaultCatalog.forEach(d => {
         if (!localStock.some(i => i.name === d.name || i.barcode === d.barcode)) {
@@ -770,6 +877,7 @@
     } else {
       inventory = defaultCatalog;
     }
+
     let billsHistory = JSON.parse(localStorage.getItem("sm_pos_bills")) || [];
     let expensesHistory = JSON.parse(localStorage.getItem("sm_pos_expenses")) || [];
     let selectedExpenseSource = "Cash";
@@ -778,11 +886,45 @@
     let selectedPayMode = "Cash";
     let editingItemIdx = -1;
 
+    // Helper: Format Date String to standard YYYY-MM-DD
+    function getStandardDateKey(dateInput) {
+      if (!dateInput) return '';
+      if (typeof dateInput === 'number') {
+        const d = new Date(dateInput);
+        return d.toISOString().split('T')[0];
+      }
+      // Check if format is DD/MM/YYYY
+      if (dateInput.includes('/')) {
+        const parts = dateInput.split(' ')[0].split('/');
+        if (parts.length === 3) {
+          const dd = parts[0].padStart(2, '0');
+          const mm = parts[1].padStart(2, '0');
+          const yyyy = parts[2];
+          return `${yyyy}-${mm}-${dd}`;
+        }
+      }
+      // If already YYYY-MM-DD
+      const d = new Date(dateInput);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString().split('T')[0];
+      }
+      return '';
+    }
+
+    function getTodayStandardDate() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
     // ================= INIT =================
     window.addEventListener("DOMContentLoaded", () => {
       renderProductCards();
       renderStockTable();
-      renderDaybookTable();
+      renderDaybookTable(); // Only Today's bills
+      renderRecordsArchiveTable(); // Full Archive with Date search
       renderBarcodeSelectionList();
 
       if (stockRef) {
@@ -808,6 +950,7 @@
             billsHistory.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
             localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
             renderDaybookTable();
+            renderRecordsArchiveTable();
             updateDashboardMetrics();
           }
         });
@@ -832,7 +975,7 @@
 
     // ================= TABS =================
     function switchTab(tabId) {
-      ['dashboard', 'billing', 'stock', 'barcodes'].forEach(t => {
+      ['dashboard', 'billing', 'records', 'stock', 'barcodes'].forEach(t => {
         const viewEl = document.getElementById('view-' + t);
         if (viewEl) viewEl.classList.add('hidden');
         const btn = document.getElementById('tab-' + t);
@@ -861,6 +1004,9 @@
         renderExpensesTable();
       } else if (tabId === 'billing') {
         renderProductCards();
+        renderDaybookTable();
+      } else if (tabId === 'records') {
+        renderRecordsArchiveTable();
       } else if (tabId === 'stock') {
         renderStockTable();
       } else if (tabId === 'barcodes') {
@@ -869,7 +1015,6 @@
     }
 
     // ================= 2. SMART BARCODE GENERATION =================
-    // Structure: [CAT]-[COST]-[MRP]-[RANDOM 3 DIGIT]
     function autoGenerateSmartBarcode() {
       const catVal = document.getElementById('inp-category').value || 'GEN';
       const catPrefixMap = {
@@ -886,7 +1031,6 @@
       const price = parseInt(document.getElementById('inp-price').value) || 0;
       const randSeq = Math.floor(100 + Math.random() * 900);
 
-      // Embedded Purchase Price and MRP in the Barcode!
       const smartBarcode = `${catCode}-${cost}-${price}-${randSeq}`;
       document.getElementById('inp-barcode').value = smartBarcode;
     }
@@ -933,7 +1077,6 @@
       if (editingItemIdx >= 0) {
         inventory[editingItemIdx] = itemData;
       } else {
-        // If barcode already exists, update
         const existingIdx = inventory.findIndex(i => i.barcode === barcode);
         if (existingIdx >= 0) {
           inventory[existingIdx] = itemData;
@@ -963,7 +1106,6 @@
       document.getElementById('inp-price').value = item.price;
       document.getElementById('inp-stock').value = item.stock;
 
-      // Select category
       const catSelect = document.getElementById('inp-category');
       for (let i = 0; i < catSelect.options.length; i++) {
         if (catSelect.options[i].value === item.category || catSelect.options[i].text.toLowerCase().includes((item.category || '').toLowerCase())) {
@@ -1161,13 +1303,21 @@
       calculateTotals();
     }
 
-    function calculateTotals() {
+    function calculateTotals(resetPaid = false) {
       const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
       const discount = parseFloat(document.getElementById('bill-discount').value) || 0;
       const net = Math.max(0, subtotal - discount);
 
       document.getElementById('lbl-subtotal').innerText = '₹' + subtotal.toFixed(2);
       document.getElementById('lbl-net-total').innerText = '₹' + net.toFixed(2);
+
+      const paidInp = document.getElementById('bill-paid');
+      if (resetPaid || paidInp.value === '' || parseFloat(paidInp.value) > net) {
+        paidInp.value = net.toFixed(2);
+      }
+      const paid = parseFloat(paidInp.value) || 0;
+      const due = Math.max(0, net - paid);
+      document.getElementById('lbl-due-amount').innerText = '₹' + due.toFixed(2);
     }
 
     function setPaymentMode(mode) {
@@ -1182,7 +1332,7 @@
       });
     }
 
-    // ================= 5. A4 INVOICE PRINT WITH QR, BOLD FOOTER & HINDI RULES =================
+    // ================= 5. A4 INVOICE PRINT (NO BLANK PAGES, COMPACT 8-INCH) =================
     function generateAndPrintA4Bill() {
       if (cart.length === 0) {
         alert("Pehle cart me items add karein!");
@@ -1196,54 +1346,74 @@
       const subtotalNum = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
       const discNum = parseFloat(document.getElementById('bill-discount').value) || 0;
       const netAmountNum = Math.max(0, subtotalNum - discNum);
+
+      let paidInpVal = document.getElementById('bill-paid').value;
+      let paidNum = (paidInpVal !== '' && !isNaN(parseFloat(paidInpVal))) ? parseFloat(paidInpVal) : netAmountNum;
+      paidNum = Math.min(paidNum, netAmountNum);
+      const dueNum = Math.max(0, netAmountNum - paidNum);
+
       const subtotalStr = '₹' + subtotalNum.toFixed(2);
       const discountStr = '- ₹' + discNum.toFixed(2);
       const netTotalStr = '₹' + netAmountNum.toFixed(2);
+      const paidStr = '₹' + paidNum.toFixed(2);
+      const dueStr = '₹' + dueNum.toFixed(2);
 
       const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
       const dateStr = new Date().toLocaleDateString('en-IN');
+      const standardDateStr = getTodayStandardDate();
 
-      // Populate A4 Bill with explicit subtotal, discount, and net payable
+      let modeStr = selectedPayMode;
+      if (dueNum > 0) {
+        modeStr += ` (DUE: ${dueStr})`;
+      }
+
       document.getElementById('a4-inv-no').innerText = "Inv: " + invNo;
       document.getElementById('a4-inv-date').innerText = "Date: " + dateStr + " " + timeStr;
       document.getElementById('a4-cust-name').innerText = custName;
       document.getElementById('a4-cust-phone').innerText = custPhone;
-      document.getElementById('a4-cust-paymode').innerText = selectedPayMode;
+      document.getElementById('a4-cust-paymode').innerText = modeStr;
 
       document.getElementById('a4-subtotal').innerText = subtotalStr;
       document.getElementById('a4-discount').innerText = discountStr;
       document.getElementById('a4-net-total').innerText = netTotalStr;
+      document.getElementById('a4-paid-amount').innerText = paidStr;
+      document.getElementById('a4-due-amount').innerText = dueStr;
+
+      const dueRow = document.getElementById('a4-due-row');
+      if (dueRow) {
+        dueRow.style.display = dueNum > 0 ? 'table-row' : 'none';
+      }
 
       const itemsBody = document.getElementById('a4-bill-items-rows');
       itemsBody.innerHTML = cart.map((item, idx) => `
         <tr style="border-bottom: 1px solid #000;">
-          <td style="padding: 6px 4px; text-align: center; border-right: 1px solid #000;">${idx + 1}</td>
-          <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000;">${item.name}</td>
-          <td style="padding: 6px 6px; text-align: center; font-family: monospace; font-size: 11px; border-right: 1px solid #000;">${item.barcode}</td>
-          <td style="padding: 6px 6px; text-align: center; font-weight: bold; border-right: 1px solid #000;">${item.qty}</td>
-          <td style="padding: 6px 8px; text-align: right; border-right: 1px solid #000;">₹${item.price.toFixed(2)}</td>
-          <td style="padding: 6px 8px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
+          <td style="padding: 4px 3px; text-align: center; border-right: 1px solid #000;">${idx + 1}</td>
+          <td style="padding: 4px 6px; font-weight: bold; border-right: 1px solid #000;">${item.name}</td>
+          <td style="padding: 4px 4px; text-align: center; font-family: monospace; font-size: 10px; border-right: 1px solid #000;">${item.barcode}</td>
+          <td style="padding: 4px 4px; text-align: center; font-weight: bold; border-right: 1px solid #000;">${item.qty}</td>
+          <td style="padding: 4px 6px; text-align: right; border-right: 1px solid #000;">₹${item.price.toFixed(2)}</td>
+          <td style="padding: 4px 6px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
         </tr>
       `).join('');
 
-      // Generate Dynamic QR with Exact Bill Amount Auto-Locked!
+      // Generate Clean Dynamic QR with Exact Bill Amount Auto-Locked (or Advance Amount)
       const qrBox = document.getElementById('a4-bill-qrcode-box');
       if (qrBox) {
         qrBox.innerHTML = '';
+        const payQrAmt = (paidNum > 0) ? paidNum : netAmountNum;
         let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_PAYEE_NAME)}&aid=${encodeURIComponent(STORE_PAYEE_AID)}&cu=INR`;
-        if (netAmountNum > 0) {
-          upiUrl += `&am=${netAmountNum.toFixed(2)}&tn=${encodeURIComponent('Bill ' + invNo)}`;
+        if (payQrAmt > 0) {
+          upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent('Bill ' + invNo)}`;
         }
         try {
           new QRCode(qrBox, {
             text: upiUrl,
-            width: 105,
-            height: 105,
+            width: 85,
+            height: 85,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
           });
-          // Immediately hide canvas element so only 1 single QR image is displayed
           setTimeout(() => {
             const canvases = qrBox.querySelectorAll('canvas');
             canvases.forEach(c => { c.style.display = 'none'; c.remove(); });
@@ -1263,10 +1433,11 @@
       localStorage.setItem("sm_pos_stock", JSON.stringify(inventory));
       if (stockRef) stockRef.set(inventory).catch(() => {});
 
-      // Record Bill (saving subtotal and discount permanently)
+      // Record Bill (saving paid and due permanently)
       const billRecord = {
         invoice: invNo,
         date: dateStr + " " + timeStr,
+        dateKey: standardDateStr,
         timestamp: Date.now(),
         customer: custName,
         phone: custPhone,
@@ -1275,13 +1446,18 @@
         subtotal: subtotalStr,
         discount: discNum,
         total: netTotalStr,
+        paid: paidNum,
+        due: dueNum,
         items: [...cart]
       };
       billsHistory.unshift(billRecord);
       localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
       if (billsRef) billsRef.push(billRecord).catch(() => {});
 
-      // Activate A4 Bill print only
+      // Snapshot for messaging triggers
+      lastGeneratedBillSnapshot = { ...billRecord };
+
+      // Activate Bill Print
       document.body.classList.add('printing-bill');
       document.body.classList.remove('printing-stickers');
       document.getElementById('printable-a4-bill').classList.remove('hidden');
@@ -1292,94 +1468,204 @@
         document.body.classList.remove('printing-bill');
         document.getElementById('printable-a4-bill').classList.add('hidden');
         
-        // Reset form ONLY AFTER print dialog opens
+        // Reset form
         cart = [];
         document.getElementById('bill-cust-name').value = '';
         document.getElementById('bill-cust-phone').value = '';
         document.getElementById('bill-discount').value = '0';
+        document.getElementById('bill-paid').value = '';
         renderCart();
         renderProductCards();
         renderStockTable();
         renderDaybookTable();
+        renderRecordsArchiveTable();
         updateDashboardMetrics();
       }, 450);
     }
 
+    // ================= TODAY'S DAYBOOK (STRICTLY TODAY ONLY) =================
     function renderDaybookTable() {
       const tbody = document.getElementById('daybook-rows');
-      if (billsHistory.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">No transactions recorded yet.</td></tr>`;
+      const counterEl = document.getElementById('today-bill-counter');
+      const todayKey = getTodayStandardDate();
+
+      const todayBills = billsHistory.filter(b => {
+        const bKey = b.dateKey || getStandardDateKey(b.date || b.timestamp);
+        return bKey === todayKey;
+      });
+
+      if (counterEl) counterEl.innerText = `${todayBills.length} Bills Today`;
+
+      if (todayBills.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400">Aaj abhi tak koi bill nahi kata hai.</td></tr>`;
       } else {
-        tbody.innerHTML = billsHistory.map(b => `
+        tbody.innerHTML = todayBills.map(b => {
+          const totVal = parseFloat((b.total || '0').replace('₹', '')) || 0;
+          const paidVal = (b.paid !== undefined) ? parseFloat(b.paid) : totVal;
+          const dueVal = (b.due !== undefined) ? parseFloat(b.due) : Math.max(0, totVal - paidVal);
+          return `
           <tr class="hover:bg-slate-50">
-            <td class="py-2.5 px-3 font-mono font-bold text-[#7b132b]">${b.invoice}</td>
-            <td class="py-2.5 px-3 text-slate-500">${b.date}</td>
-            <td class="py-2.5 px-3 font-bold text-slate-800">${b.customer}</td>
-            <td class="py-2.5 px-3 text-slate-600">${b.itemsCount} items</td>
-            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.paymentMode === 'UPI' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'}">${b.paymentMode}</span></td>
-            <td class="py-2.5 px-3 text-right font-bold text-slate-900">${b.total}</td>
-            <td class="py-2.5 px-3 text-center">
-              <div class="flex items-center justify-center gap-1.5">
-                <button onclick="reprintSavedBill('${b.invoice}')" class="text-[#7b132b] hover:underline font-bold text-xs" title="Print Invoice">A4 Print</button>
-                <button onclick="toggleBillPaymentMode('${b.invoice}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-bold px-2 py-0.5 rounded-md text-[10px] transition shadow-2xs" title="UPI to Cash ya Cash to UPI badlein">⇄ Switch Mode</button>
+            <td class="py-2 px-2.5 font-mono font-bold text-[#7b132b]">${b.invoice}</td>
+            <td class="py-2 px-2.5 text-slate-500">${b.date}</td>
+            <td class="py-2 px-2.5 font-bold text-slate-800">${b.customer}</td>
+            <td class="py-2 px-2.5 text-slate-600">${b.itemsCount} items</td>
+            <td class="py-2 px-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.paymentMode === 'UPI' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'}">${b.paymentMode}</span></td>
+            <td class="py-2 px-2.5 text-right font-bold text-slate-900">${b.total}</td>
+            <td class="py-2 px-2.5 text-right font-bold text-emerald-700">₹${paidVal.toFixed(2)}</td>
+            <td class="py-2 px-2.5 text-right font-bold ${dueVal > 0 ? 'text-rose-600' : 'text-slate-400'}">₹${dueVal.toFixed(2)}</td>
+            <td class="py-2 px-2.5 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button onclick="reprintSavedBill('${b.invoice}')" class="text-[#7b132b] hover:underline font-bold text-xs" title="Print Invoice"><i class="fa-solid fa-print"></i></button>
+                <button onclick="sendDirectWhatsApp('${b.invoice}')" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs" title="WhatsApp Invoice"><i class="fa-brands fa-whatsapp"></i></button>
+                <button onclick="sendDirectSMS('${b.invoice}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs" title="SMS Invoice"><i class="fa-solid fa-comment-sms"></i></button>
+                <button onclick="toggleBillPaymentMode('${b.invoice}')" class="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.5 rounded text-[10px]" title="Switch Mode">⇄</button>
+                ${dueVal > 0 ? `<button onclick="clearDueAmount('${b.invoice}')" class="bg-rose-100 text-rose-800 border border-rose-300 font-bold px-1.5 py-0.5 rounded text-[10px]" title="Clear Due">Clear</button>` : ''}
               </div>
             </td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
       }
     }
 
+    // ================= RECORDS ARCHIVE (PREVIOUS BILLS BY DATE/SEARCH) =================
+    function renderRecordsArchiveTable() {
+      const tbody = document.getElementById('archive-table-rows');
+      if (!tbody) return;
+
+      const datePickerVal = document.getElementById('archive-date-picker')?.value || '';
+      const searchQuery = (document.getElementById('archive-search-input')?.value || '').toLowerCase().trim();
+      const modeFilter = document.getElementById('archive-mode-filter')?.value || 'All';
+
+      const filtered = billsHistory.filter(b => {
+        // Date match
+        if (datePickerVal) {
+          const bKey = b.dateKey || getStandardDateKey(b.date || b.timestamp);
+          if (bKey !== datePickerVal) return false;
+        }
+        // Mode match
+        if (modeFilter !== 'All' && b.paymentMode !== modeFilter) {
+          return false;
+        }
+        // Text Search match
+        if (searchQuery) {
+          const matchInv = (b.invoice || '').toLowerCase().includes(searchQuery);
+          const matchCust = (b.customer || '').toLowerCase().includes(searchQuery);
+          const matchPhone = (b.phone || '').toLowerCase().includes(searchQuery);
+          if (!matchInv && !matchCust && !matchPhone) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400">Chune gaye date ya filter me koi bill nahi mila.</td></tr>`;
+      } else {
+        tbody.innerHTML = filtered.map(b => {
+          const totVal = parseFloat((b.total || '0').replace('₹', '')) || 0;
+          const paidVal = (b.paid !== undefined) ? parseFloat(b.paid) : totVal;
+          const dueVal = (b.due !== undefined) ? parseFloat(b.due) : Math.max(0, totVal - paidVal);
+          return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2 px-2.5 font-mono font-bold text-[#7b132b]">${b.invoice}</td>
+            <td class="py-2 px-2.5 text-slate-500">${b.date}</td>
+            <td class="py-2 px-2.5 font-bold text-slate-800">${b.customer} <span class="text-[10px] text-slate-400 font-normal">(${b.phone || 'N/A'})</span></td>
+            <td class="py-2 px-2.5 text-slate-600">${b.itemsCount} items</td>
+            <td class="py-2 px-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.paymentMode === 'UPI' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'}">${b.paymentMode}</span></td>
+            <td class="py-2 px-2.5 text-right font-bold text-slate-900">${b.total}</td>
+            <td class="py-2 px-2.5 text-right font-bold text-emerald-700">₹${paidVal.toFixed(2)}</td>
+            <td class="py-2 px-2.5 text-right font-bold ${dueVal > 0 ? 'text-rose-600' : 'text-slate-400'}">₹${dueVal.toFixed(2)}</td>
+            <td class="py-2 px-2.5 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button onclick="reprintSavedBill('${b.invoice}')" class="text-[#7b132b] hover:underline font-bold text-xs" title="Print Invoice"><i class="fa-solid fa-print"></i></button>
+                <button onclick="sendDirectWhatsApp('${b.invoice}')" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
+                <button onclick="sendDirectSMS('${b.invoice}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs" title="SMS"><i class="fa-solid fa-comment-sms"></i></button>
+                <button onclick="toggleBillPaymentMode('${b.invoice}')" class="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1.5 py-0.5 rounded text-[10px]" title="Switch Mode">⇄</button>
+                ${dueVal > 0 ? `<button onclick="clearDueAmount('${b.invoice}')" class="bg-rose-100 text-rose-800 border border-rose-300 font-bold px-1.5 py-0.5 rounded text-[10px]" title="Clear Due">Clear</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+        }).join('');
+      }
+    }
+
+    function filterRecordsArchive() {
+      renderRecordsArchiveTable();
+    }
+
+    function resetArchiveFilters() {
+      if (document.getElementById('archive-date-picker')) document.getElementById('archive-date-picker').value = '';
+      if (document.getElementById('archive-search-input')) document.getElementById('archive-search-input').value = '';
+      if (document.getElementById('archive-mode-filter')) document.getElementById('archive-mode-filter').value = 'All';
+      renderRecordsArchiveTable();
+    }
+
+    // ================= REPRINT BILL =================
     function reprintSavedBill(invNo) {
       const b = billsHistory.find(i => i.invoice === invNo);
       if (!b) return;
 
       const discNum = parseFloat(b.discount || 0);
+      const totNum = parseFloat((b.total || '0').replace('₹', '')) || 0;
       let subtotalStr = b.subtotal;
       if (!subtotalStr) {
-        const totNum = parseFloat((b.total || '0').replace('₹', '')) || 0;
         subtotalStr = '₹' + (totNum + discNum).toFixed(2);
+      }
+
+      const paidNum = (b.paid !== undefined) ? parseFloat(b.paid) : totNum;
+      const dueNum = (b.due !== undefined) ? parseFloat(b.due) : Math.max(0, totNum - paidNum);
+
+      let modeStr = b.paymentMode || 'Cash';
+      if (dueNum > 0) {
+        modeStr += ` (DUE: ₹${dueNum.toFixed(2)})`;
       }
 
       document.getElementById('a4-inv-no').innerText = "Inv: " + b.invoice;
       document.getElementById('a4-inv-date').innerText = "Date: " + b.date;
       document.getElementById('a4-cust-name').innerText = b.customer;
       document.getElementById('a4-cust-phone').innerText = b.phone;
-      document.getElementById('a4-cust-paymode').innerText = b.paymentMode;
+      document.getElementById('a4-cust-paymode').innerText = modeStr;
       document.getElementById('a4-subtotal').innerText = subtotalStr;
       document.getElementById('a4-discount').innerText = '- ₹' + discNum.toFixed(2);
       document.getElementById('a4-net-total').innerText = b.total;
+      document.getElementById('a4-paid-amount').innerText = '₹' + paidNum.toFixed(2);
+      document.getElementById('a4-due-amount').innerText = '₹' + dueNum.toFixed(2);
+
+      const dueRow = document.getElementById('a4-due-row');
+      if (dueRow) {
+        dueRow.style.display = dueNum > 0 ? 'table-row' : 'none';
+      }
 
       const itemsBody = document.getElementById('a4-bill-items-rows');
       itemsBody.innerHTML = (b.items || []).map((item, idx) => `
         <tr style="border-bottom: 1px solid #000;">
-          <td style="padding: 6px 4px; text-align: center; border-right: 1px solid #000;">${idx + 1}</td>
-          <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000;">${item.name}</td>
-          <td style="padding: 6px 6px; text-align: center; font-family: monospace; font-size: 11px; border-right: 1px solid #000;">${item.barcode}</td>
-          <td style="padding: 6px 6px; text-align: center; font-weight: bold; border-right: 1px solid #000;">${item.qty}</td>
-          <td style="padding: 6px 8px; text-align: right; border-right: 1px solid #000;">₹${item.price.toFixed(2)}</td>
-          <td style="padding: 6px 8px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
+          <td style="padding: 4px 3px; text-align: center; border-right: 1px solid #000;">${idx + 1}</td>
+          <td style="padding: 4px 6px; font-weight: bold; border-right: 1px solid #000;">${item.name}</td>
+          <td style="padding: 4px 4px; text-align: center; font-family: monospace; font-size: 10px; border-right: 1px solid #000;">${item.barcode}</td>
+          <td style="padding: 4px 4px; text-align: center; font-weight: bold; border-right: 1px solid #000;">${item.qty}</td>
+          <td style="padding: 4px 6px; text-align: right; border-right: 1px solid #000;">₹${item.price.toFixed(2)}</td>
+          <td style="padding: 4px 6px; text-align: right; font-weight: bold;">₹${(item.price * item.qty).toFixed(2)}</td>
         </tr>
       `).join('');
 
-      // Generate Dynamic QR for reprint with Exact Amount Locked!
+      // Generate Dynamic QR for reprint with Exact Amount Locked
       const qrBox = document.getElementById('a4-bill-qrcode-box');
       if (qrBox) {
         qrBox.innerHTML = '';
-        const netNum = parseFloat((b.total || '0').replace('₹', '')) || 0;
+        const payQrAmt = (paidNum > 0) ? paidNum : totNum;
         let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_PAYEE_NAME)}&aid=${encodeURIComponent(STORE_PAYEE_AID)}&cu=INR`;
-        if (netNum > 0) {
-          upiUrl += `&am=${netNum.toFixed(2)}&tn=${encodeURIComponent('Bill ' + b.invoice)}`;
+        if (payQrAmt > 0) {
+          upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent('Bill ' + b.invoice)}`;
         }
         try {
           new QRCode(qrBox, {
             text: upiUrl,
-            width: 105,
-            height: 105,
+            width: 85,
+            height: 85,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
           });
-          // Immediately hide canvas element so only 1 single QR image is displayed
           setTimeout(() => {
             const canvases = qrBox.querySelectorAll('canvas');
             canvases.forEach(c => { c.style.display = 'none'; c.remove(); });
@@ -1393,6 +1679,7 @@
       document.body.classList.remove('printing-stickers');
       document.getElementById('printable-a4-bill').classList.remove('hidden');
       document.getElementById('printable-barcode-sheet').classList.add('hidden');
+      
       setTimeout(() => {
         window.print();
         document.body.classList.remove('printing-bill');
@@ -1400,7 +1687,7 @@
       }, 450);
     }
 
-    // ================= 6. A4 BARCODE STICKER SHEET GENERATOR =================
+    // ================= 6. BARCODE STICKER SHEET GENERATOR =================
     function renderBarcodeSelectionList() {
       const tbody = document.getElementById('barcode-selection-rows');
       tbody.innerHTML = inventory.map((item, idx) => `
@@ -1444,31 +1731,30 @@
             totalLabels++;
             const labelDiv = document.createElement('div');
             labelDiv.style.border = '1px dashed #666';
-            labelDiv.style.padding = '3mm 2mm';
-            labelDiv.style.borderRadius = '4px';
+            labelDiv.style.padding = '2.5mm 1.5mm';
+            labelDiv.style.borderRadius = '3px';
             labelDiv.style.textAlign = 'center';
             labelDiv.style.background = '#fff';
             labelDiv.style.breakInside = 'avoid';
 
             labelDiv.innerHTML = `
               <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; color: #7b132b; letter-spacing: 0.5px;">Studio Manorama</div>
-              <div style="font-size: 9px; font-weight: bold; color: #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 130px; margin: 1px auto;">${item.name}</div>
-              <svg id="bc-svg-${idx}-${q}" style="max-width: 100%; height: 35px; margin: 1px auto;"></svg>
-              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: bold; padding: 0 4px; margin-top: 1px;">
+              <div style="font-size: 8.5px; font-weight: bold; color: #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 125px; margin: 1px auto;">${item.name}</div>
+              <svg id="bc-svg-${idx}-${q}" style="max-width: 100%; height: 30px; margin: 1px auto;"></svg>
+              <div style="display: flex; justify-content: space-between; font-size: 8.5px; font-weight: bold; padding: 0 3px; margin-top: 1px;">
                 <span>${item.category}</span>
-                <span style="font-size: 10px; color: #000;">MRP: ₹${item.price}</span>
+                <span style="font-size: 9px; color: #000;">MRP: ₹${item.price}</span>
               </div>
             `;
             container.appendChild(labelDiv);
 
-            // Render SVG Barcode via JsBarcode
             setTimeout(() => {
               try {
                 JsBarcode(`#bc-svg-${idx}-${q}`, item.barcode, {
                   format: "CODE128",
-                  width: 1.2,
-                  height: 28,
-                  fontSize: 9,
+                  width: 1.1,
+                  height: 25,
+                  fontSize: 8.5,
                   displayValue: true,
                   margin: 0
                 });
@@ -1497,33 +1783,37 @@
       }, 500);
     }
   
-    // ================= 7. DASHBOARD, FINANCIAL COLLECTION & EXPENSES =================
+    // ================= 7. FINANCIAL METRICS & EXPENSES =================
     function updateDashboardMetrics() {
       let totalSales = 0;
       let cashSales = 0;
       let upiSales = 0;
       let totalExpense = 0;
+      const todayKey = getTodayStandardDate();
 
-      // Calculate Sales & Collections
       billsHistory.forEach(b => {
-        const amt = parseFloat((b.total || '0').replace('₹', '')) || 0;
-        totalSales += amt;
-        const mode = (b.paymentMode || 'Cash').toUpperCase();
-        if (mode.includes('UPI')) {
-          upiSales += amt;
-        } else {
-          cashSales += amt;
+        const bKey = b.dateKey || getStandardDateKey(b.date || b.timestamp);
+        if (bKey === todayKey) {
+          const amt = parseFloat((b.total || '0').replace('₹', '')) || 0;
+          totalSales += amt;
+          const mode = (b.paymentMode || 'Cash').toUpperCase();
+          if (mode.includes('UPI')) {
+            upiSales += amt;
+          } else {
+            cashSales += amt;
+          }
         }
       });
 
-      // Calculate Expenses
       expensesHistory.forEach(e => {
-        totalExpense += parseFloat(e.amount || 0);
+        const eKey = e.dateKey || getStandardDateKey(e.date || e.timestamp);
+        if (eKey === todayKey) {
+          totalExpense += parseFloat(e.amount || 0);
+        }
       });
 
       const netBalance = totalSales - totalExpense;
 
-      // Update Dashboard DOM
       const elTotal = document.getElementById('dash-total-sales');
       const elCash = document.getElementById('dash-cash-sales');
       const elUpi = document.getElementById('dash-upi-sales');
@@ -1532,16 +1822,17 @@
       const elBills = document.getElementById('dash-total-bills');
       const elFooterExp = document.getElementById('lbl-dash-footer-expense');
 
+      const todayBillsCount = billsHistory.filter(b => (b.dateKey || getStandardDateKey(b.date || b.timestamp)) === todayKey).length;
+
       if (elTotal) elTotal.innerText = '₹' + totalSales.toFixed(2);
       if (elCash) elCash.innerText = '₹' + cashSales.toFixed(2);
       if (elUpi) elUpi.innerText = '₹' + upiSales.toFixed(2);
       if (elExp) elExp.innerText = '₹' + totalExpense.toFixed(2);
       if (elNet) elNet.innerText = '₹' + netBalance.toFixed(2);
-      if (elBills) elBills.innerText = billsHistory.length;
+      if (elBills) elBills.innerText = todayBillsCount;
       if (elFooterExp) elFooterExp.innerText = '₹' + totalExpense.toFixed(2);
     }
 
-    // TOGGLE PAYMENT MODE (CORRECT BILL ENTRY: UPI ⇄ CASH)
     function toggleBillPaymentMode(invNo) {
       const bill = billsHistory.find(b => b.invoice === invNo);
       if (!bill) return;
@@ -1552,24 +1843,21 @@
       const confirmed = confirm(`Invoice ${invNo}:\nPayment mode abhi "${currentMode}" hai.\nKya aap ise badal kar "${newMode}" karna chahte hain?`);
       if (!confirmed) return;
 
-      // Update locally
       bill.paymentMode = newMode;
       localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
 
-      // Update on Firebase Cloud Realtime Database
       if (billsRef) {
         billsRef.set(billsHistory).catch(err => {
           console.warn("Firebase Bill Mode Update Warning:", err);
         });
       }
 
-      // Re-render views
       renderDaybookTable();
+      renderRecordsArchiveTable();
       updateDashboardMetrics();
       alert(`Invoice ${invNo} ka payment mode safaltapoorvak "${newMode}" me update ho gaya!`);
     }
 
-    // EXPENSE MANAGEMENT
     function setExpenseSource(src) {
       selectedExpenseSource = src;
       const btnCash = document.getElementById('exp-src-Cash');
@@ -1589,6 +1877,7 @@
       const category = document.getElementById('exp-cat').value;
       const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
       const dateStr = new Date().toLocaleDateString('en-IN');
+      const standardDateStr = getTodayStandardDate();
 
       if (!title) {
         alert("Kripya kharche ka vivran (title) bharein!");
@@ -1607,6 +1896,7 @@
         source: selectedExpenseSource,
         time: timeStr,
         date: dateStr,
+        dateKey: standardDateStr,
         timestamp: Date.now()
       };
 
@@ -1619,7 +1909,6 @@
         });
       }
 
-      // Reset form
       document.getElementById('exp-title').value = '';
       document.getElementById('exp-amount').value = '';
 
@@ -1644,14 +1933,20 @@
     function renderExpensesTable() {
       const tbody = document.getElementById('expense-rows-table');
       const countLabel = document.getElementById('exp-count-label');
-      if (countLabel) countLabel.innerText = expensesHistory.length + " expenses recorded";
+      const todayKey = getTodayStandardDate();
+      
+      const todayExpenses = expensesHistory.filter(e => {
+        const eKey = e.dateKey || getStandardDateKey(e.date || e.timestamp);
+        return eKey === todayKey;
+      });
 
+      if (countLabel) countLabel.innerText = todayExpenses.length + " expenses recorded today";
       if (!tbody) return;
 
-      if (expensesHistory.length === 0) {
+      if (todayExpenses.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">Aaj koi kharcha darj nahi kiya gaya hai.</td></tr>`;
       } else {
-        tbody.innerHTML = expensesHistory.map((e, idx) => `
+        tbody.innerHTML = todayExpenses.map((e, idx) => `
           <tr class="hover:bg-slate-50">
             <td class="py-2.5 px-2.5 text-slate-400">${e.time || 'N/A'}</td>
             <td class="py-2.5 px-2.5 font-bold text-slate-800">${e.title}</td>
@@ -1684,7 +1979,132 @@
       URL.revokeObjectURL(url);
     }
 
+    function exportAllBillsCSV() {
+      if (billsHistory.length === 0) {
+        alert("Export karne ke liye koi bill data nahi hai!");
+        return;
+      }
+      let csv = "Invoice,Date,Customer,Phone,Items,Mode,Total\n";
+      billsHistory.forEach(b => {
+        csv += `"${b.invoice}","${b.date}","${b.customer}","${b.phone || ''}",${b.itemsCount},"${b.paymentMode}","${b.total}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "Studio_Manorama_All_Bills_Archive.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  
+    let lastGeneratedBillSnapshot = null;
+
+    function getCurrentBillSnapshot() {
+      if (lastGeneratedBillSnapshot) return lastGeneratedBillSnapshot;
+      if (billsHistory.length > 0) return billsHistory[0];
+      return null;
+    }
+
+    function formatBillMessage(b) {
+      const totVal = parseFloat((b.total || '0').replace('₹', '')) || 0;
+      const paidVal = (b.paid !== undefined) ? parseFloat(b.paid) : totVal;
+      const dueVal = (b.due !== undefined) ? parseFloat(b.due) : Math.max(0, totVal - paidVal);
+
+      let msg = `*STUDIO MANORAMA - INVOICE*\n`;
+      msg += `Vidyapati Nagar, Samastipur | Mob: 7542074417\n`;
+      msg += `--------------------------------\n`;
+      msg += `Bill No: ${b.invoice}\n`;
+      msg += `Date: ${b.date}\n`;
+      msg += `Customer: ${b.customer}\n`;
+      msg += `--------------------------------\n`;
+      (b.items || []).forEach(i => {
+        msg += `• ${i.name} x ${i.qty} = ₹${(i.price * i.qty).toFixed(2)}\n`;
+      });
+      msg += `--------------------------------\n`;
+      msg += `Subtotal: ${b.subtotal}\n`;
+      msg += `Discount: - ₹${parseFloat(b.discount || 0).toFixed(2)}\n`;
+      msg += `*Net Total: ${b.total}*\n`;
+      msg += `*Advance Paid (जमा): ₹${paidVal.toFixed(2)}*\n`;
+      if (dueVal > 0) {
+        msg += `*BALANCE DUE (बकाया): ₹${dueVal.toFixed(2)}*\n`;
+      }
+      msg += `--------------------------------\n`;
+      msg += `Pay via UPI: ${STORE_UPI}\n`;
+      msg += `Thank You! Visit Again!`;
+      return msg;
+    }
+
+    function sendDirectWhatsApp(invNo) {
+      const b = invNo ? billsHistory.find(x => x.invoice === invNo) : getCurrentBillSnapshot();
+      if (!b) {
+        alert("Pehle bill generate karein!");
+        return;
+      }
+      const rawPhone = (b.phone || '').trim();
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+      if (!cleanPhone || cleanPhone.length < 10) {
+        const manualPhone = prompt("Customer ka 10-digit mobile number dalein:", cleanPhone || "");
+        if (!manualPhone) return;
+        b.phone = manualPhone;
+      }
+      const finalPhone = b.phone.replace(/\D/g, '');
+      const msg = formatBillMessage(b);
+      const url = `https://api.whatsapp.com/send?phone=91${finalPhone}&text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    }
+
+    function sendDirectSMS(invNo) {
+      const b = invNo ? billsHistory.find(x => x.invoice === invNo) : getCurrentBillSnapshot();
+      if (!b) {
+        alert("Pehle bill generate karein!");
+        return;
+      }
+      const rawPhone = (b.phone || '').trim();
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+      if (!cleanPhone || cleanPhone.length < 10) {
+        const manualPhone = prompt("Customer ka 10-digit mobile number dalein:", cleanPhone || "");
+        if (!manualPhone) return;
+        b.phone = manualPhone;
+      }
+      const finalPhone = b.phone.replace(/\D/g, '');
+      const msg = formatBillMessage(b);
+      const url = `sms:+91${finalPhone}?body=${encodeURIComponent(msg)}`;
+      window.location.href = url;
+    }
+
+    function clearDueAmount(invNo) {
+      const bill = billsHistory.find(b => b.invoice === invNo);
+      if (!bill) return;
+
+      const totVal = parseFloat((bill.total || '0').replace('₹', '')) || 0;
+      const currPaid = (bill.paid !== undefined) ? parseFloat(bill.paid) : totVal;
+      const currDue = (bill.due !== undefined) ? parseFloat(bill.due) : Math.max(0, totVal - currPaid);
+
+      const amountToClear = prompt(`Invoice ${invNo}:\nKul Bill: ${bill.total}\nAbhi Jama: ₹${currPaid.toFixed(2)}\nBaki Due: ₹${currDue.toFixed(2)}\n\nCustomer ne abhi kitna jama kiya?`, currDue.toFixed(2));
+      if (amountToClear === null) return;
+
+      const payingNow = parseFloat(amountToClear);
+      if (isNaN(payingNow) || payingNow <= 0) {
+        alert("Sahi amount dalein!");
+        return;
+      }
+
+      bill.paid = Math.min(totVal, currPaid + payingNow);
+      bill.due = Math.max(0, totVal - bill.paid);
+
+      localStorage.setItem("sm_pos_bills", JSON.stringify(billsHistory));
+      if (billsRef) {
+        billsRef.set(billsHistory).catch(err => {
+          console.warn("Firebase Due Update Warning:", err);
+        });
+      }
+
+      renderDaybookTable();
+      renderRecordsArchiveTable();
+      updateDashboardMetrics();
+      alert(`Invoice ${invNo} me ₹${payingNow.toFixed(2)} jama kar liya gaya! Naya Due: ₹${bill.due.toFixed(2)}`);
+    }
+
   </script>
 </body>
 </html>
-Displaying index.html.
