@@ -77,32 +77,32 @@
       }
 
       body.printing-bill #printable-a4-bill #a4-bill-qrcode-box {
-        display: block !important;
-        width: 100px !important;
-        height: 100px !important;
-        max-height: 100px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 105px !important;
+        height: 105px !important;
+        max-height: 105px !important;
         overflow: hidden !important;
         background: #ffffff !important;
         margin: 0 !important;
         padding: 0 !important;
       }
 
+      /* QRCode.js renders both canvas and img: show canvas, hide duplicate img */
       body.printing-bill #printable-a4-bill #a4-bill-qrcode-box canvas {
+        display: block !important;
+        visibility: visible !important;
+        width: 105px !important;
+        height: 105px !important;
+        margin: 0 !important;
+      }
+
+      body.printing-bill #printable-a4-bill #a4-bill-qrcode-box img {
         display: none !important;
         visibility: hidden !important;
         width: 0 !important;
         height: 0 !important;
-      }
-
-      body.printing-bill #printable-a4-bill #a4-bill-qrcode-box img {
-        display: block !important;
-        visibility: visible !important;
-        width: 100px !important;
-        height: 100px !important;
-        max-width: 100px !important;
-        max-height: 100px !important;
-        margin: 0 !important;
-        object-fit: contain !important;
       }
 
       body.printing-bill #printable-barcode-sheet {
@@ -751,7 +751,7 @@
             <tr>
               <td style="vertical-align: middle; width: 100px;">
                 <div style="border: 1px solid #7b132b; padding: 2px; background: #ffffff; display: inline-block; border-radius: 4px;">
-                  <div id="a4-bill-qrcode-box" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; background: #ffffff;"></div>
+                  <div id="a4-bill-qrcode-box" style="width: 105px; height: 105px; display: flex; align-items: center; justify-content: center; background: #ffffff;"></div>
                 </div>
               </td>
               <td style="vertical-align: middle; padding-left: 10px;">
@@ -1329,7 +1329,7 @@
       document.getElementById('lbl-net-total').innerText = '₹' + net.toFixed(2);
 
       const paidInp = document.getElementById('bill-paid');
-      // Jab tak user khud hath se advance amount na daale, paid amount hamesha pure bill (net total) ke barabar auto-update hota rahega!
+      // Jab tak user khud advance box me hath se na daale, paid amount hamesha pure bill (net total) ke barabar auto-update hota rahega!
       if (forceResetPaid || !isPaidManuallyEdited || paidInp.value === '' || parseFloat(paidInp.value) > net) {
         paidInp.value = net.toFixed(2);
       }
@@ -1414,13 +1414,13 @@
         </tr>
       `).join('');
 
-      // Generate Clean Dynamic QR with Exact Net Due Amount Auto-Locked (or Net Total if no due)
+      // Generate Clean Dynamic QR with Exact Net Due Amount Auto-Locked (Universal NPCI UPI without aid)
       const qrBox = document.getElementById('a4-bill-qrcode-box');
       if (qrBox) {
         qrBox.innerHTML = '';
-        // Agar baaki due bacha hai to QR scan me Net Due aayega, nahi to paid/net total
         const payQrAmt = (dueNum > 0) ? dueNum : ((paidNum > 0) ? paidNum : netAmountNum);
-        const billNote = (dueNum > 0) ? ('Due ' + invNo) : ('Bill ' + invNo);
+        const billNote = (dueNum > 0) ? ('Due SM ' + invNo) : ('Bill SM ' + invNo);
+        // Universal NPCI standard format working on GPay, PhonePe, Paytm, BHIM:
         let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_PAYEE_NAME)}&cu=INR`;
         if (payQrAmt > 0) {
           upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent(billNote)}`;
@@ -1440,16 +1440,12 @@
         try {
           new QRCode(qrBox, {
             text: upiUrl,
-            width: 100,
-            height: 100,
+            width: 105,
+            height: 105,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
           });
-          setTimeout(() => {
-            const canvases = qrBox.querySelectorAll('canvas');
-            canvases.forEach(c => { c.style.display = 'none'; c.remove(); });
-          }, 30);
         } catch (e) {
           console.warn("QR Render Error:", e);
         }
@@ -1685,9 +1681,8 @@
       const qrBox = document.getElementById('a4-bill-qrcode-box');
       if (qrBox) {
         qrBox.innerHTML = '';
-        // Agar baaki due bacha hai to QR scan me Net Due aayega, nahi to paid/total
         const payQrAmt = (dueNum > 0) ? dueNum : ((paidNum > 0) ? paidNum : totNum);
-        const billNote = (dueNum > 0) ? ('Due ' + b.invoice) : ('Bill ' + b.invoice);
+        const billNote = (dueNum > 0) ? ('Due SM ' + b.invoice) : ('Bill SM ' + b.invoice);
         let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_PAYEE_NAME)}&cu=INR`;
         if (payQrAmt > 0) {
           upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent(billNote)}`;
@@ -1707,16 +1702,12 @@
         try {
           new QRCode(qrBox, {
             text: upiUrl,
-            width: 100,
-            height: 100,
+            width: 105,
+            height: 105,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
           });
-          setTimeout(() => {
-            const canvases = qrBox.querySelectorAll('canvas');
-            canvases.forEach(c => { c.style.display = 'none'; c.remove(); });
-          }, 30);
         } catch (e) {
           console.warn("QR Render Error:", e);
         }
