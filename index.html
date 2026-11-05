@@ -17,7 +17,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    <style>
+  <style>
     @media print {
       html, body {
         margin: 0 !important;
@@ -29,34 +29,45 @@
         overflow: visible !important;
       }
 
-      body * {
-        visibility: hidden !important;
+      /* HIDE SCREEN INTERFACE COMPLETELY SO IT OCCUPIES ZERO HEIGHT */
+      header, main, nav {
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
       }
 
-      /* PRINTING BILL ONLY - STRICTLY 1 PAGE ON 8-INCH PAPER */
-      body.printing-bill #printable-a4-bill,
-      body.printing-bill #printable-a4-bill * {
-        visibility: visible !important;
+      body.printing-bill > *:not(#printable-a4-bill) {
+        display: none !important;
       }
 
+      body.printing-stickers > *:not(#printable-barcode-sheet) {
+        display: none !important;
+      }
+
+      /* PRINTING A4 / 8-INCH BILL (STRICTLY 1 PAGE ONLY) */
       body.printing-bill #printable-a4-bill {
         display: block !important;
+        visibility: visible !important;
         position: relative !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        max-width: 195mm !important;
         margin: 0 auto !important;
         padding: 2mm 3mm !important;
+        width: 100% !important;
+        max-width: 195mm !important;
         background: #ffffff !important;
         color: #000000 !important;
         box-sizing: border-box !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
         page-break-before: avoid !important;
         break-before: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      body.printing-bill #printable-a4-bill * {
+        visibility: visible !important;
       }
 
       body.printing-bill #printable-a4-bill table {
@@ -99,24 +110,22 @@
       }
 
       /* PRINTING BARCODE STICKERS ONLY */
-      body.printing-stickers #printable-barcode-sheet,
-      body.printing-stickers #printable-barcode-sheet * {
-        visibility: visible !important;
-      }
-
       body.printing-stickers #printable-barcode-sheet {
         display: block !important;
+        visibility: visible !important;
         position: relative !important;
-        left: 0 !important;
-        top: 0 !important;
+        margin: 0 auto !important;
+        padding: 3mm !important;
         width: 100% !important;
         max-width: 195mm !important;
-        margin: 0 !important;
-        padding: 3mm !important;
         background: #ffffff !important;
         color: #000000 !important;
         page-break-inside: avoid !important;
         page-break-after: avoid !important;
+      }
+
+      body.printing-stickers #printable-barcode-sheet * {
+        visibility: visible !important;
       }
 
       body.printing-stickers #printable-barcode-sheet #a4-barcode-grid-container {
@@ -136,7 +145,7 @@
 
       @page {
         size: auto;
-        margin: 3mm;
+        margin: 2mm;
       }
     }
   </style>
@@ -748,7 +757,7 @@
               <td style="vertical-align: middle; padding-left: 10px;">
                 <div style="font-size: 12px; font-weight: 900; color: #7b132b; margin-bottom: 1px; text-transform: uppercase;">Scan & Pay</div>
                 <div style="font-size: 10px; font-weight: bold; color: #1e293b; margin-bottom: 2px;">Google Pay • PhonePe • Paytm • BHIM</div>
-                <div style="font-size: 9px; color: #047857; font-weight: bold;">Amount Locked | Instant Pay</div>
+                <div id="a4-qr-locked-note" style="font-size: 9px; color: #047857; font-weight: bold;">Amount Locked | Instant Pay</div>
                 <div style="font-size: 9px; color: #64748b;">किसी भी UPI ऐप से स्कैन करके पे करें</div>
               </td>
             </tr>
@@ -1396,15 +1405,29 @@
         </tr>
       `).join('');
 
-      // Generate Clean Dynamic QR with Exact Bill Amount Auto-Locked (or Advance Amount)
+      // Generate Clean Dynamic QR with Exact Net Due Amount Auto-Locked (or Net Total if no due)
       const qrBox = document.getElementById('a4-bill-qrcode-box');
       if (qrBox) {
         qrBox.innerHTML = '';
-        const payQrAmt = (paidNum > 0) ? paidNum : netAmountNum;
+        // Agar baaki due bacha hai to QR scan me Net Due aayega, nahi to paid/net total
+        const payQrAmt = (dueNum > 0) ? dueNum : ((paidNum > 0) ? paidNum : netAmountNum);
+        const billNote = (dueNum > 0) ? ('Due ' + invNo) : ('Bill ' + invNo);
         let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_PAYEE_NAME)}&aid=${encodeURIComponent(STORE_PAYEE_AID)}&cu=INR`;
         if (payQrAmt > 0) {
-          upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent('Bill ' + invNo)}`;
+          upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent(billNote)}`;
         }
+
+        const qrNoteEl = document.getElementById('a4-qr-locked-note');
+        if (qrNoteEl) {
+          if (dueNum > 0) {
+            qrNoteEl.innerText = `Net Due ₹${dueNum.toFixed(2)} Locked | Scan & Pay`;
+            qrNoteEl.style.color = '#be123c';
+          } else {
+            qrNoteEl.innerText = `Full Paid ₹${netAmountNum.toFixed(2)} | Scan & Pay`;
+            qrNoteEl.style.color = '#047857';
+          }
+        }
+
         try {
           new QRCode(qrBox, {
             text: upiUrl,
@@ -1648,15 +1671,29 @@
         </tr>
       `).join('');
 
-      // Generate Dynamic QR for reprint with Exact Amount Locked
+      // Generate Dynamic QR for reprint with Exact Net Due Amount Auto-Locked
       const qrBox = document.getElementById('a4-bill-qrcode-box');
       if (qrBox) {
         qrBox.innerHTML = '';
-        const payQrAmt = (paidNum > 0) ? paidNum : totNum;
+        // Agar baaki due bacha hai to QR scan me Net Due aayega, nahi to paid/total
+        const payQrAmt = (dueNum > 0) ? dueNum : ((paidNum > 0) ? paidNum : totNum);
+        const billNote = (dueNum > 0) ? ('Due ' + b.invoice) : ('Bill ' + b.invoice);
         let upiUrl = `upi://pay?pa=${encodeURIComponent(STORE_UPI)}&pn=${encodeURIComponent(STORE_PAYEE_NAME)}&aid=${encodeURIComponent(STORE_PAYEE_AID)}&cu=INR`;
         if (payQrAmt > 0) {
-          upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent('Bill ' + b.invoice)}`;
+          upiUrl += `&am=${payQrAmt.toFixed(2)}&tn=${encodeURIComponent(billNote)}`;
         }
+
+        const qrNoteEl = document.getElementById('a4-qr-locked-note');
+        if (qrNoteEl) {
+          if (dueNum > 0) {
+            qrNoteEl.innerText = `Net Due ₹${dueNum.toFixed(2)} Locked | Scan & Pay`;
+            qrNoteEl.style.color = '#be123c';
+          } else {
+            qrNoteEl.innerText = `Full Paid ₹${totNum.toFixed(2)} | Scan & Pay`;
+            qrNoteEl.style.color = '#047857';
+          }
+        }
+
         try {
           new QRCode(qrBox, {
             text: upiUrl,
