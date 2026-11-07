@@ -179,6 +179,9 @@
         <button onclick="switchTab('records')" id="tab-records" class="bg-[#630c20] text-pink-100 hover:bg-[#500919] font-bold text-xs px-3.5 py-2 rounded-xl border border-pink-900/40 flex items-center gap-1.5 whitespace-nowrap transition">
           <i class="fa-solid fa-clock-rotate-left"></i> Records Archive
         </button>
+        <button onclick="switchTab('purchases')" id="tab-purchases" class="bg-[#630c20] text-pink-100 hover:bg-[#500919] font-bold text-xs px-3.5 py-2 rounded-xl border border-pink-900/40 flex items-center gap-1.5 whitespace-nowrap transition">
+          <i class="fa-solid fa-truck-ramp-box"></i> Purchases & Suppliers
+        </button>
         <button onclick="switchTab('stock')" id="tab-stock" class="bg-[#630c20] text-pink-100 hover:bg-[#500919] font-bold text-xs px-3.5 py-2 rounded-xl border border-pink-900/40 flex items-center gap-1.5 whitespace-nowrap transition">
           <i class="fa-solid fa-boxes-stacked"></i> Stock Master
         </button>
@@ -562,6 +565,185 @@
           </table>
         </div>
       </div>
+    </section>
+
+    <!-- ================= VIEW 1.8: PURCHASES & SUPPLIERS ================= -->
+    <section id="view-purchases" class="hidden space-y-6">
+      
+      <!-- TOP METRIC CARDS -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Purchases</span>
+          <div class="mt-2">
+            <div id="pur-total-amount" class="text-lg sm:text-xl font-black text-slate-800">₹0.00</div>
+            <span class="text-[10px] text-slate-500">कुल माल खरीद</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-xs flex flex-col justify-between bg-emerald-50/20">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Paid to Suppliers</span>
+          <div class="mt-2">
+            <div id="pur-paid-amount" class="text-lg sm:text-xl font-black text-emerald-700">₹0.00</div>
+            <span class="text-[10px] text-emerald-600">सप्लायर को दिया</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border-2 border-rose-200 shadow-xs flex flex-col justify-between bg-rose-50/30">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-rose-800">Supplier Due (उधार)</span>
+          <div class="mt-2">
+            <div id="pur-due-amount" class="text-lg sm:text-xl font-black text-rose-600">₹0.00</div>
+            <span class="text-[10px] text-rose-600 font-bold">सप्लायर का बकाया</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Purchase Bills</span>
+          <div class="mt-2">
+            <div id="pur-bills-count" class="text-lg sm:text-xl font-black text-slate-800">0</div>
+            <span class="text-[10px] text-slate-500">कुल खरीद बिल</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ENTRY FORM & SUPPLIER LEDGER -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- LEFT: RECORD PURCHASE ENTRY -->
+        <div class="lg:col-span-5 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+          <div class="flex items-center justify-between border-b pb-2">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-truck-ramp-box text-[#7b132b]"></i>
+              <span>Add Purchase Entry (माल खरीद दर्ज करें)</span>
+            </h3>
+            <span class="text-[10px] bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200">Stock Inward</span>
+          </div>
+
+          <div class="space-y-2.5 text-xs">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Supplier Name (सप्लायर / कंपनी)</label>
+                <input id="pur-supplier-name" type="text" placeholder="e.g. Balaji Bangles / Patna Xerox" class="w-full border rounded-xl p-2 bg-slate-50 focus:bg-white focus:ring-1 focus:ring-[#7b132b] outline-none font-bold">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Supplier Mobile / GST</label>
+                <input id="pur-supplier-phone" type="tel" placeholder="Mobile / WhatsApp" class="w-full border rounded-xl p-2 bg-slate-50 focus:bg-white focus:ring-1 focus:ring-[#7b132b] outline-none font-bold">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Supplier Bill / Invoice No.</label>
+                <input id="pur-bill-no" type="text" placeholder="e.g. INV-8941" class="w-full border rounded-xl p-2 bg-slate-50 focus:bg-white focus:ring-1 focus:ring-[#7b132b] outline-none font-bold">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Purchase Date</label>
+                <input id="pur-bill-date" type="date" class="w-full border rounded-xl p-2 bg-white font-bold outline-none">
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Item / Product Name (खरीदा गया सामान)</label>
+              <input id="pur-item-name" type="text" placeholder="e.g. Lahthi 4pc Multi / 4x6 Glossy Paper..." class="w-full border rounded-xl p-2 bg-slate-50 focus:bg-white focus:ring-1 focus:ring-[#7b132b] outline-none font-bold">
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Category</label>
+                <select id="pur-category" class="w-full border rounded-xl p-2 bg-white font-semibold">
+                  <option value="Photography">Photography</option>
+                  <option value="Bangles">Bangles (लाहठी)</option>
+                  <option value="Jewelry">Jewelry</option>
+                  <option value="Cosmetics">Cosmetics</option>
+                  <option value="Perfumes">Perfumes</option>
+                  <option value="Parlour Services">Parlour</option>
+                  <option value="Gifts & Photo">Gifts & Photo</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Qty (मात्रा)</label>
+                <input id="pur-qty" type="number" min="1" value="10" oninput="calcPurchaseTotal()" class="w-full border rounded-xl p-2 bg-slate-50 font-bold text-center">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Cost / Unit (₹)</label>
+                <input id="pur-cost" type="number" min="0" value="100" oninput="calcPurchaseTotal()" class="w-full border rounded-xl p-2 bg-slate-50 font-bold text-right">
+              </div>
+            </div>
+
+            <div class="p-2.5 bg-slate-50 border rounded-xl space-y-2">
+              <div class="flex justify-between items-center font-bold">
+                <span class="text-slate-600">Total Purchase Cost:</span>
+                <span id="lbl-pur-total-cost" class="text-sm font-black text-slate-900">₹1000.00</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-bold text-emerald-800 mb-0.5">Amount Paid (दिया ₹)</label>
+                  <input id="pur-paid-now" type="number" min="0" value="1000" oninput="calcPurchaseTotal()" class="w-full border border-emerald-400 rounded-lg p-1.5 text-right font-black text-emerald-700 bg-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-rose-800 mb-0.5">Balance Due (बकाया ₹)</label>
+                  <span id="lbl-pur-due-balance" class="block p-1.5 text-right font-black text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">₹0.00</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-1.5 pt-1">
+              <button type="button" onclick="setPurchasePaymentSource('Cash')" id="pur-src-Cash" class="py-1.5 border-2 border-emerald-600 bg-emerald-50 text-emerald-800 font-bold rounded-xl text-center text-xs">💵 Cash</button>
+              <button type="button" onclick="setPurchasePaymentSource('UPI')" id="pur-src-UPI" class="py-1.5 border border-slate-200 bg-white text-slate-700 font-bold rounded-xl text-center text-xs">📱 UPI</button>
+              <button type="button" onclick="setPurchasePaymentSource('Credit')" id="pur-src-Credit" class="py-1.5 border border-slate-200 bg-white text-slate-700 font-bold rounded-xl text-center text-xs">⏳ Credit (उधार)</button>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+              <input type="checkbox" id="pur-auto-add-stock" checked class="w-4 h-4 text-[#7b132b] rounded">
+              <label for="pur-auto-add-stock" class="font-bold text-slate-700 text-xs">Auto-Add / Update in Inventory Stock Master (स्टॉक में जोड़ें)</label>
+            </div>
+
+            <button onclick="saveNewPurchase()" class="w-full bg-[#7b132b] hover:bg-[#630c20] text-white font-bold py-2.5 rounded-xl shadow flex items-center justify-center gap-1.5 transition">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>Save Purchase Entry (खरीद सेव करें)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- RIGHT: PURCHASE HISTORY TABLE -->
+        <div class="lg:col-span-7 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex flex-wrap items-center justify-between border-b pb-2 mb-3 gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-800">Purchase Inward Ledger (सप्लायर खरीद बहीखाता)</h3>
+                <span id="pur-count-label" class="text-[11px] text-slate-400">0 purchases recorded</span>
+              </div>
+              <button onclick="exportPurchasesCSV()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border">
+                <i class="fa-solid fa-download text-slate-500"></i> Export Purchases
+              </button>
+            </div>
+
+            <div class="overflow-x-auto max-h-[380px]">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold uppercase border-b text-[10px]">
+                  <tr>
+                    <th class="py-2 px-2.5">BILL NO. / DATE</th>
+                    <th class="py-2 px-2.5">SUPPLIER</th>
+                    <th class="py-2 px-2.5">ITEM / QTY</th>
+                    <th class="py-2 px-2.5">PAY MODE</th>
+                    <th class="py-2 px-2.5 text-right">TOTAL</th>
+                    <th class="py-2 px-2.5 text-right text-emerald-700">PAID</th>
+                    <th class="py-2 px-2.5 text-right text-rose-600">DUE</th>
+                    <th class="py-2 px-2.5 text-center">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="purchases-table-rows" class="divide-y divide-slate-100 font-medium"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="border-t pt-3 mt-3 flex justify-between items-center text-xs">
+            <span class="text-slate-500 font-semibold">Total Purchases Recorded:</span>
+            <span id="lbl-pur-footer-total" class="text-base font-black text-[#7b132b]">₹0.00</span>
+          </div>
+        </div>
+
+      </div>
+
     </section>
 
     <!-- ================= VIEW 2: STOCK MASTER ================= -->
@@ -952,9 +1134,6 @@
             renderProductCards();
             renderStockTable();
             renderBarcodeSelectionList();
-      renderPurchasesTable();
-      const purDateEl = document.getElementById("pur-bill-date");
-      if (purDateEl) purDateEl.value = getTodayStandardDate();
           } else {
             stockRef.set(defaultCatalog);
           }
@@ -1044,9 +1223,6 @@
         renderStockTable();
       } else if (tabId === 'barcodes') {
         renderBarcodeSelectionList();
-      renderPurchasesTable();
-      const purDateEl = document.getElementById("pur-bill-date");
-      if (purDateEl) purDateEl.value = getTodayStandardDate();
       }
     }
 
